@@ -1,10 +1,35 @@
 # RoboRally game rules
 
+## Programming deck
+
+Each player starts with a separate deck of 20 programming cards.
+All six starting decks have the same card distribution.
+
+| Card | Copies per deck |
+|---|---:|
+| Move 1 | 5 |
+| Move 2 | 3 |
+| Move 3 | 1 |
+| Right Turn | 3 |
+| Left Turn | 3 |
+| Backup | 1 |
+| Power Up | 1 |
+| Again | 2 |
+| U-Turn | 1 |
+| **Total** | **20** |
+
 ## Programming and Activation
 
 During a standard programming phase, each player draws nine cards, places one card in each of five numbered registers, and discards the remaining four cards. The order matters because each instruction uses the robot's position and facing at the moment it runs.
 
 During activation, all robots resolve register 1 in priority order. Once their cards have resolved, board elements activate in the prescribed order. Play then advances to register 2 and repeats through register 5. A wall can block a movement instruction. Board effects still apply for that register.
+
+When a player needs to draw a card and their programming deck is empty,
+they shuffle their discard pile to form a new deck. Any SPAM cards in
+that pile become part of the new deck and can be drawn into the player's hand.
+
+When a SPAM card activates, return it to the SPAM pile. Draw the top card
+from the player's programming deck and play it immediately in the same register.
 
 ### Example: turning on a clockwise gear
 
@@ -30,8 +55,9 @@ immediately east of A. The next square beyond B is empty.
 
 ### Pushing a robot into a pit
 
-Robot A plays `Move 1`, pushes Robot B one square east, and moves into B's old square.
-Robot B falls into the pit and reboots.
+A pit lies one square east of Robot B, with no wall between them.
+Robot A plays `Move 1` and pushes B into the pit. A ends the move
+on B's former square, and B reboots.
 
 ## Reboot
 
@@ -49,3 +75,15 @@ in sequence.
 For example, a robot that visits checkpoint 2 before checkpoint 1
 must return to checkpoint 2 after completing checkpoint 1.
 The first robot to complete the final checkpoint wins.
+
+
+## Damage cards
+
+All players draw damage cards from a shared supply.
+
+| Card | Starting supply |
+|---|---:|
+| SPAM | 38 |
+| Virus | 18 |
+| Trojan Horse | 12 |
+| Worm | 6 |
