@@ -17,3 +17,13 @@ A robot faces north. The square immediately north contains a clockwise gear. Ass
 | 3 | Move 1 | The robot moves one square west, leaving the gear. | It remains facing west. |
 
 The same gear affects the robot in two consecutive registers because the robot occupies that square both times the gear activates.
+
+## Pushing and walls
+
+Robot A faces east and plays `Move 1`. Robot B occupies the square
+immediately east of A. The next square beyond B is empty.
+
+- If a wall blocks B from entering the empty square, both robots stay
+  in their original positions.
+- If the path is clear, A pushes B one square east and moves into
+  the square B just left.
