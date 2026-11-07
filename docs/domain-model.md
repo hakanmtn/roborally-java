@@ -66,12 +66,19 @@ player's hand into the selected register.
 If a card placement is rejected, both the player's hand and the
 selected register keep their previous contents.
 
+
 ## Movement
 
 A robot stores its position and facing direction. The board identifies
-walls between adjacent cells. To resolve a push, the movement rules
-check the robots in the path and the edges they would cross. If a wall
-blocks any robot in the chain, all robots in the chain stay in place.
+walls, and the game locates robots through its players.
+
+`MovementService` checks the robots in the push chain and the edges
+they need to cross before moving any robot. If a wall blocks any of
+those edges, every robot in the chain stays in its original position.
+
+Keeping the push rule in one place means that individual robots do not
+need to coordinate the movement of other robots. The service needs
+access to the board and the robots' current positions.
 
 ## Board lasers
 
@@ -106,3 +113,11 @@ the edges it blocks. A laser stores its firing direction and beam count.
 Both are represented by the common type `BoardElement`.
 Walls block movement when a robot tries to cross an edge. Lasers and
 gears apply their effects during board activation.
+
+## Design decisions
+
+A program owns its five registers. Each register belongs to one program
+for its entire lifetime. The UML diagram represents this as composition.
+
+Walls, lasers and gears implement the `BoardElement` interface so that
+a board cell can hold them together. Each type defines its own behavior.

@@ -42,5 +42,8 @@ classDiagram
     Robot : -boolean rebootedThisRound
 
     Game : -Map~DamageCardType, Integer~ damageSupply
+
+    MovementService ..> Board : checks walls
+    MovementService ..> Game : locates robots
 ```
 

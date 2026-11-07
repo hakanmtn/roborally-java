@@ -92,3 +92,9 @@ All players draw damage cards from a shared supply.
 | Virus | 18 |
 | Trojan Horse | 12 |
 | Worm | 6 |
+
+## Scope
+
+The first playable version covers the base game, including programming
+cards, damage cards and board effects. Upgrade cards are an optional
+extension.
