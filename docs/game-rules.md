@@ -93,8 +93,16 @@ All players draw damage cards from a shared supply.
 | Trojan Horse | 12 |
 | Worm | 6 |
 
+If a damage pile is empty, the player chooses a card from another
+available damage pile. For example, if only one SPAM card remains
+when a robot reboots, the player takes that card and chooses one
+other damage card. Both cards go into the player's discard pile.
+
+Source: [RoboRally Game Guide, p. 15](https://media.wizards.com/2017/rules/roborally_rules.pdf#page=15)
+
 ## Scope
 
 The first playable version covers the base game, including programming
 cards, damage cards and board effects. Upgrade cards are an optional
 extension.
+
