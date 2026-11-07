@@ -27,3 +27,25 @@ immediately east of A. The next square beyond B is empty.
   in their original positions.
 - If the path is clear, A pushes B one square east and moves into
   the square B just left.
+
+### Pushing a robot into a pit
+
+Robot A plays `Move 1`, pushes Robot B one square east, and moves into B's old square.
+Robot B falls into the pit and reboots.
+
+## Reboot
+
+A robot reboots when it falls into a pit, moves off the board, or a card
+instructs it to reboot. Place the robot on its designated restart space.
+The player puts two SPAM damage cards in their discard pile. The robot
+skips its remaining registers for this round.
+
+## Checkpoints
+
+A robot must reach the checkpoints in numerical order. A checkpoint
+counts when the robot ends a register on it and it is the next one
+in sequence.
+
+For example, a robot that visits checkpoint 2 before checkpoint 1
+must return to checkpoint 2 after completing checkpoint 1.
+The first robot to complete the final checkpoint wins.
