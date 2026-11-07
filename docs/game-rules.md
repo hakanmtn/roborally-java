@@ -24,6 +24,11 @@ During a standard programming phase, each player draws nine cards, places one ca
 
 During activation, all robots resolve register 1 in priority order. Once their cards have resolved, board elements activate in the prescribed order. Play then advances to register 2 and repeats through register 5. A wall can block a movement instruction. Board effects still apply for that register.
 
+To determine priority, count the horizontal and vertical steps from the
+antenna to each robot. The closest robot acts first. If robots are equally
+far from the antenna, start in the direction the antenna dish faces and
+sweep clockwise. The first tied robot reached by the sweep acts first.
+
 When a player needs to draw a card and their programming deck is empty,
 they shuffle their discard pile to form a new deck. Any SPAM cards in
 that pile become part of the new deck and can be drawn into the player's hand.
