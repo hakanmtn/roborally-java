@@ -41,6 +41,7 @@ public class ClientHandler implements Runnable {
   public synchronized void sendMessage(String message) throws IOException {
     writer.write(message + "\n");
     writer.flush();
+
   }
 
   void disconnect() {

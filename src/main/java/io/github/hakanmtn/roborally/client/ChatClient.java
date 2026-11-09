@@ -47,9 +47,13 @@ public class ChatClient {
           break;
         }
 
-        writer.write(message + "\n");
-        writer.flush();
+        sendMessage(writer, message);
       }
     }
+  }
+
+  static void sendMessage(OutputStreamWriter writer, String message) throws IOException {
+    writer.write(message + "\n");
+    writer.flush();
   }
 }
