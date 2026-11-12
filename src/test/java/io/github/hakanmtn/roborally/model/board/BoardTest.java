@@ -1,10 +1,11 @@
-package io.github.hakanmtn.roborally.model;
+package io.github.hakanmtn.roborally.model.board;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import io.github.hakanmtn.roborally.model.Position;
 import org.junit.jupiter.api.Test;
 
-public class BoardTest {
+class BoardTest {
 
   @Test
   void findsCellByEqualCoordinates() {

@@ -2,6 +2,7 @@ package io.github.hakanmtn.roborally.model;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import io.github.hakanmtn.roborally.model.program.CardType;
 import org.junit.jupiter.api.Test;
 
 class PlayerTest {

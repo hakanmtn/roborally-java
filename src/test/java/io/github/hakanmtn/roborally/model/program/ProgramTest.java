@@ -1,4 +1,4 @@
-package io.github.hakanmtn.roborally.model;
+package io.github.hakanmtn.roborally.model.program;
 
 import static org.junit.jupiter.api.Assertions.*;
 

@@ -1,4 +1,4 @@
-package io.github.hakanmtn.roborally.model;
+package io.github.hakanmtn.roborally.model.program;
 
 public class Register {
 

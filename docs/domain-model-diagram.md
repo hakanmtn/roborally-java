@@ -31,7 +31,6 @@ classDiagram
 
     Gear : -RotationDirection rotationDirection
     BoardElement <|.. Antenna
-    Antenna : -Position position
     Antenna : -Direction facing
 
     BoardElement <|.. Checkpoint

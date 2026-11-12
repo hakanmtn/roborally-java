@@ -1,4 +1,7 @@
-package io.github.hakanmtn.roborally.model;
+package io.github.hakanmtn.roborally.model.board;
+
+import io.github.hakanmtn.roborally.model.board.element.BoardElement;
+import io.github.hakanmtn.roborally.model.Position;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,6 @@
-package io.github.hakanmtn.roborally.model;
+package io.github.hakanmtn.roborally.model.board;
+
+import io.github.hakanmtn.roborally.model.Position;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -14,3 +14,11 @@ is that the sender waits for the server round trip before seeing the message.
 Verified with two JavaFX clients: each window displayed each message once.
 
 Related issue: [#7 — TCP chat and JavaFX UI](https://github.com/hakanmtn/roborally-java/issues/7).
+
+### Antenna position
+
+Antenna stores its facing direction. Its position is provided by the
+Cell containing it, avoiding duplicate position state.
+
+Validation of the antenna count belongs to complete-map validation
+and is not implemented yet.
