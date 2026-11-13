@@ -4,8 +4,8 @@
 classDiagram
     Program "1" *-- "5" Register : contains
     Player "1" -- "1" Robot : controls
-    Board "1" *-- "1..*" BoardCell : contains
-    BoardCell "1" *-- "0..*" BoardElement : contains
+    Board "1" *-- "1..*" Cell : contains
+    Cell "1" *-- "0..*" BoardElement : contains
     class BoardElement {
         <<interface>>
     }
@@ -31,7 +31,6 @@ classDiagram
 
     Gear : -RotationDirection rotationDirection
     BoardElement <|.. Antenna
-    Antenna : -Position position
     Antenna : -Direction facing
 
     BoardElement <|.. Checkpoint
