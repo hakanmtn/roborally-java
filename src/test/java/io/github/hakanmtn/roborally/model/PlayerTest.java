@@ -49,9 +49,17 @@ class PlayerTest {
 
     assertEquals(CardType.MOVE_I, playerA.getProgram().getRegister(0).getCard());
 
-    for(int index = 0; index < 5 ; index++) {
+    for (int index = 0; index < 5; index++) {
       assertTrue(playerB.getProgram().getRegister(index).isEmpty());
     }
+  }
 
+  @Test
+  void newPlayerHasEmptyCardCollections() {
+    Player playerA = new Player(new Robot(new Position(0, 0), Direction.NORTH));
+
+    assertTrue(playerA.getHand().isEmpty());
+    assertTrue(playerA.getProgrammingDeck().isEmpty());
+    assertTrue(playerA.getDiscardPile().isEmpty());
   }
 }

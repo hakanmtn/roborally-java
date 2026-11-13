@@ -3,6 +3,7 @@ package io.github.hakanmtn.roborally.model;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.hakanmtn.roborally.model.board.Board;
+import io.github.hakanmtn.roborally.model.card.DamageCardType;
 import org.junit.jupiter.api.Test;
 
 public class GameTest {
@@ -115,5 +116,21 @@ public class GameTest {
 
     assertSame(board, game.getBoard());
     assertNull(game2.getBoard());
+  }
+
+  @Test
+  void newGameHasUninitializedDamageSupply() {
+    Game game = new Game();
+    assertTrue(game.getDamageSupply().isEmpty());
+  }
+
+  @Test
+  void damageSupplyReturnedByGameCannotBeModified() {
+
+    Game game = new Game();
+
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> game.getDamageSupply().put(DamageCardType.SPAM, 10));
   }
 }
