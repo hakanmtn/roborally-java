@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.hakanmtn.roborally.protocol.HelloClientBody;
+import io.github.hakanmtn.roborally.protocol.HelloServerBody;
 import io.github.hakanmtn.roborally.protocol.JsonMessageCodec;
 import io.github.hakanmtn.roborally.protocol.ProtocolMessage;
 import org.junit.jupiter.api.Test;
@@ -141,7 +142,8 @@ class JsonMessageCodecTest {
   void decodingMessageWithArrayBodyThrowsException() {
     JsonMessageCodec codec = new JsonMessageCodec();
 
-    String json = """
+    String json =
+        """
             {
               "messageType": "Alive",
               "messageBody": []
@@ -149,14 +151,14 @@ class JsonMessageCodecTest {
             """;
 
     assertThrows(IllegalArgumentException.class, () -> codec.decode(json));
-
   }
 
   @Test
   void decodingMessageWithNumericTypeThrowsException() {
     JsonMessageCodec codec = new JsonMessageCodec();
 
-    String json = """
+    String json =
+        """
             {
               "messageType": 42,
               "messageBody": {}
@@ -170,7 +172,8 @@ class JsonMessageCodecTest {
   void decodingMessageWithBlankTypeThrowsException() {
     JsonMessageCodec codec = new JsonMessageCodec();
 
-    String json = """
+    String json =
+        """
             {
               "messageType": "   ",
               "messageBody": {}
@@ -178,6 +181,63 @@ class JsonMessageCodecTest {
             """;
 
     assertThrows(IllegalArgumentException.class, () -> codec.decode(json));
+  }
 
+  @Test
+  void decodingTopLevelArrayThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    String json =
+        """
+            [{"messageType":"Alive","messageBody":{}}]
+            """;
+
+    assertThrows(IllegalArgumentException.class, () -> codec.decode(json));
+  }
+
+  @Test
+  void decodingIncompleteJsonThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+    String json =
+        """
+            {"messageType":"Alive","messageBody":{}
+            """;
+
+    assertThrows(IllegalArgumentException.class, () -> codec.decode(json));
+  }
+
+  @Test
+  void helloClientProtocolSurvivesEncodingAndDecoding() {
+
+    JsonMessageCodec codec = new JsonMessageCodec();
+    HelloClientBody sentBody = new HelloClientBody("Version 0.1");
+    ProtocolMessage<HelloClientBody> sentMessage = new ProtocolMessage<>("HelloClient", sentBody);
+
+    String json = codec.encode(sentMessage);
+    ProtocolMessage<JsonObject> receivedMessage = codec.decode(json);
+    HelloClientBody receivedBody =
+        codec.decodeBody(receivedMessage.messageBody(), HelloClientBody.class);
+
+    assertEquals("HelloClient", receivedMessage.messageType());
+    assertEquals("Version 0.1", receivedBody.protocol());
+  }
+
+  @Test
+  void encodingHelloServerPreservesClientIdentityAndProtocol() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    HelloServerBody sentBody = new HelloServerBody("RoboRally", false, "Version 0.1");
+    ProtocolMessage<HelloServerBody> sentMessage = new ProtocolMessage<>("HelloServer", sentBody);
+
+    String json = codec.encode(sentMessage);
+
+    JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+    JsonObject body = root.getAsJsonObject("messageBody");
+
+    assertEquals("HelloServer", root.get("messageType").getAsString());
+    assertEquals("RoboRally", body.get("group").getAsString());
+    assertEquals("Version 0.1", body.get("protocol").getAsString());
+    assertTrue(body.getAsJsonPrimitive("isAI").isBoolean());
+    assertFalse(body.get("isAI").getAsBoolean());
   }
 }

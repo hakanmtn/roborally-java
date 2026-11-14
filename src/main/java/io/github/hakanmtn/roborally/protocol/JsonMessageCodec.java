@@ -1,8 +1,6 @@
 package io.github.hakanmtn.roborally.protocol;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 
 public class JsonMessageCodec {
 
@@ -13,12 +11,24 @@ public class JsonMessageCodec {
   }
 
   public ProtocolMessage<JsonObject> decode(String json) {
-    JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+
+    JsonElement parsed;
+
+    try {
+      parsed = JsonParser.parseString(json);
+    } catch (JsonSyntaxException e) {
+      throw new IllegalArgumentException("Invalid JSON syntax", e);
+    }
+
+    if (!parsed.isJsonObject()) throw new IllegalArgumentException("Message must be a JSON object");
+
+    JsonObject root = parsed.getAsJsonObject();
 
     if (!root.has("messageType") || root.get("messageType").isJsonNull()) {
       throw new IllegalArgumentException("Message type is required");
     }
-    if (!root.get("messageType").isJsonPrimitive() || !root.getAsJsonPrimitive("messageType").isString()) {
+    if (!root.get("messageType").isJsonPrimitive()
+        || !root.getAsJsonPrimitive("messageType").isString()) {
       throw new IllegalArgumentException("Message type must be a JSON object");
     }
 
@@ -30,12 +40,9 @@ public class JsonMessageCodec {
       throw new IllegalArgumentException("Message body must be a JSON object");
     }
 
-
-
-
     String messageType = root.get("messageType").getAsString();
 
-    if(messageType.isBlank()) {
+    if (messageType.isBlank()) {
       throw new IllegalArgumentException("Message type muss not be blank");
     }
 

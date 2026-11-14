@@ -1,5 +1,11 @@
 package io.github.hakanmtn.roborally.client;
 
+import com.google.gson.JsonObject;
+import io.github.hakanmtn.roborally.protocol.HelloClientBody;
+import io.github.hakanmtn.roborally.protocol.HelloServerBody;
+import io.github.hakanmtn.roborally.protocol.JsonMessageCodec;
+import io.github.hakanmtn.roborally.protocol.ProtocolMessage;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -19,10 +25,33 @@ public class ChatClient {
           new BufferedReader(
               new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
 
+      String firstLine = reader.readLine();
+      if (firstLine == null) {
+        System.out.println("Sertver disconnected before sending HelloClient.");
+        return;
+      }
+
+      JsonMessageCodec codec = new JsonMessageCodec();
+      ProtocolMessage<JsonObject> greeting = codec.decode(firstLine);
+
+      if (!"HelloClient".equals(greeting.messageType())) {
+        System.err.println("Expected HelloClient, received" + greeting.messageType());
+        return;
+      }
+
+      HelloClientBody body =
+              codec.decodeBody(greeting.messageBody(), HelloClientBody.class);
+      System.out.println("Server protocol: " + body.protocol());
+
+      HelloServerBody clientBody = new HelloServerBody("RoboRally", false, "Version 0.1");
+      ProtocolMessage<HelloServerBody> reply = new ProtocolMessage<>("HelloServer", clientBody);
+      sendMessage(writer, codec.encode(reply));
+
       Thread listenerThread =
           new Thread(
               () -> {
                 try {
+
                   String message;
                   while ((message = reader.readLine()) != null) {
                     System.out.println("Server: " + message);
