@@ -8,6 +8,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class ChatServer {
 
   private final CopyOnWriteArrayList<ClientHandler> activeClients = new CopyOnWriteArrayList<>();
+  private int nextClientId = 1;
+
 
   public static void main(String[] args) throws IOException {
     new ChatServer().start();
@@ -44,5 +46,9 @@ public class ChatServer {
         client.disconnect();
       }
     }
+  }
+
+  synchronized int assignClientId(){
+    return nextClientId++;
   }
 }

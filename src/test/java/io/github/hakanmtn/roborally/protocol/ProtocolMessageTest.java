@@ -1,4 +1,4 @@
-package io.github.hakanmtn.roborally.model.protocol;
+package io.github.hakanmtn.roborally.protocol;
 
 import io.github.hakanmtn.roborally.protocol.HelloClientBody;
 import io.github.hakanmtn.roborally.protocol.ProtocolMessage;

@@ -1,13 +1,10 @@
-package io.github.hakanmtn.roborally.model.protocol;
+package io.github.hakanmtn.roborally.protocol;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import io.github.hakanmtn.roborally.protocol.HelloClientBody;
-import io.github.hakanmtn.roborally.protocol.HelloServerBody;
-import io.github.hakanmtn.roborally.protocol.JsonMessageCodec;
-import io.github.hakanmtn.roborally.protocol.ProtocolMessage;
+import com.google.gson.JsonPrimitive;
 import org.junit.jupiter.api.Test;
 
 class JsonMessageCodecTest {
@@ -239,5 +236,57 @@ class JsonMessageCodecTest {
     assertEquals("Version 0.1", body.get("protocol").getAsString());
     assertTrue(body.getAsJsonPrimitive("isAI").isBoolean());
     assertFalse(body.get("isAI").getAsBoolean());
+  }
+
+  @Test
+  void encodingWelcomePreservesClientIdAsNumber() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+    WelcomeBody sentBody = new WelcomeBody(42);
+    ProtocolMessage<WelcomeBody> sentMessage = new ProtocolMessage<>("Welcome", sentBody);
+
+    String json = codec.encode(sentMessage);
+    JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+    JsonObject body = root.getAsJsonObject("messageBody");
+
+    assertEquals("Welcome", root.get("messageType").getAsString());
+
+    JsonPrimitive clientId = body.getAsJsonPrimitive("clientID");
+    assertTrue(clientId.isNumber());
+    assertEquals(42, clientId.getAsInt());
+  }
+
+  @Test
+  void encodingAliveProducesEmptyMessageBody() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+    AliveBody aliveBody = new AliveBody();
+    ProtocolMessage<AliveBody> sentMessage = new ProtocolMessage<>("Alive", aliveBody);
+
+    String json = codec.encode(sentMessage);
+    JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+    JsonObject body = root.getAsJsonObject("messageBody");
+
+    assertNotNull(body);
+    assertEquals(0, body.size());
+    assertEquals("Alive", root.get("messageType").getAsString());
+  }
+
+  @Test
+  void plainChatMessageIsNotAnAliveReply() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    assertFalse(codec.isAliveMessage("Alive"));
+  }
+
+  @Test
+  void aliveProtocolMessageIsAnAliveReply() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    String message =
+        """
+            {"messageType":"Alive","messageBody":{}}
+            """
+            .strip();
+
+    assertTrue(codec.isAliveMessage(message));
   }
 }

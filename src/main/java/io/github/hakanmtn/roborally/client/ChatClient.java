@@ -1,10 +1,7 @@
 package io.github.hakanmtn.roborally.client;
 
 import com.google.gson.JsonObject;
-import io.github.hakanmtn.roborally.protocol.HelloClientBody;
-import io.github.hakanmtn.roborally.protocol.HelloServerBody;
-import io.github.hakanmtn.roborally.protocol.JsonMessageCodec;
-import io.github.hakanmtn.roborally.protocol.ProtocolMessage;
+import io.github.hakanmtn.roborally.protocol.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -27,7 +24,7 @@ public class ChatClient {
 
       String firstLine = reader.readLine();
       if (firstLine == null) {
-        System.out.println("Sertver disconnected before sending HelloClient.");
+        System.out.println("Server disconnected before sending HelloClient.");
         return;
       }
 
@@ -47,6 +44,28 @@ public class ChatClient {
       ProtocolMessage<HelloServerBody> reply = new ProtocolMessage<>("HelloServer", clientBody);
       sendMessage(writer, codec.encode(reply));
 
+      String responseLine = reader.readLine();
+      if (responseLine == null) {
+        System.out.println("Server disconnected during handshake.");
+        return;
+      }
+
+      ProtocolMessage<JsonObject> response = codec.decode(responseLine);
+
+      if("Error".equals(response.messageType())) {
+        ErrorBody error = codec.decodeBody(response.messageBody(), ErrorBody.class);
+        System.err.println("Server error: " + error.error());
+        return;
+      }
+
+      if(!"Welcome".equals(response.messageType())) {
+        System.err.println("Expected Welcome, received" + response.messageType());
+        return;
+      }
+
+      WelcomeBody welcomeBody = codec.decodeBody(response.messageBody(), WelcomeBody.class);
+      System.out.println("My client ID: " + welcomeBody.clientID());
+
       Thread listenerThread =
           new Thread(
               () -> {
@@ -54,6 +73,12 @@ public class ChatClient {
 
                   String message;
                   while ((message = reader.readLine()) != null) {
+
+                    if(codec.isAliveMessage(message)) {
+                      sendMessage(writer,message);
+                      continue;
+                    }
+
                     System.out.println("Server: " + message);
                   }
                 } catch (IOException e) {

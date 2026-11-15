@@ -53,5 +53,15 @@ public class JsonMessageCodec {
 
   public <T> T decodeBody(JsonObject body, Class<T> bodyType) {
     return gson.fromJson(body, bodyType);
+
+  }
+
+  public boolean isAliveMessage(String message) {
+    try {
+      ProtocolMessage<JsonObject> received = decode(message);
+      return "Alive".equals(received.messageType()) && received.messageBody().isEmpty();
+    } catch (IllegalArgumentException e) {
+      return false;
+    }
   }
 }
