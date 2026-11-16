@@ -1,15 +1,21 @@
 package io.github.hakanmtn.roborally.server;
 
+import io.github.hakanmtn.roborally.protocol.PlayerAddedBody;
+import io.github.hakanmtn.roborally.protocol.PlayerValuesBody;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ChatServer {
 
   private final CopyOnWriteArrayList<ClientHandler> activeClients = new CopyOnWriteArrayList<>();
   private int nextClientId = 1;
-
+  private final Map<Integer, PlayerValuesBody> playerSelections = new HashMap<>();
 
   public static void main(String[] args) throws IOException {
     new ChatServer().start();
@@ -48,7 +54,34 @@ public class ChatServer {
     }
   }
 
-  synchronized int assignClientId(){
+  synchronized int assignClientId() {
     return nextClientId++;
+  }
+
+  synchronized boolean trySelectFigure(int clientId, PlayerValuesBody selection) {
+    for (var entry : playerSelections.entrySet()) {
+      int ownerId = entry.getKey();
+      int selectedFigure = entry.getValue().figure();
+
+      if (ownerId != clientId && selectedFigure == selection.figure()) {
+        return false;
+      }
+    }
+    playerSelections.put(clientId, selection);
+    return true;
+  }
+
+  public synchronized List<PlayerAddedBody> getSelectedPlayers() {
+    List<PlayerAddedBody> players = new ArrayList<>();
+    for (var entry : playerSelections.entrySet()) {
+
+      players.add(
+          new PlayerAddedBody(entry.getKey(), entry.getValue().name(), entry.getValue().figure()));
+    }
+    return players;
+  }
+
+  synchronized void removePlayerSelection(int clientId) {
+    playerSelections.remove(clientId);
   }
 }

@@ -25,6 +25,7 @@ public class ClientHandler implements Runnable {
   @Override
   public void run() {
     ScheduledExecutorService heartbeat = Executors.newSingleThreadScheduledExecutor();
+    Integer clientId = null;
     try (Socket socket = clientSocket) {
       var reader =
           new BufferedReader(
@@ -58,20 +59,29 @@ public class ClientHandler implements Runnable {
         return;
       }
 
-      int clientId = server.assignClientId();
+      clientId = server.assignClientId();
       WelcomeBody welcomeBody = new WelcomeBody(clientId);
       ProtocolMessage<WelcomeBody> welcome = new ProtocolMessage<>("Welcome", welcomeBody);
       sendMessage(CODEC.encode(welcome));
 
+      for(PlayerAddedBody player : server.getSelectedPlayers()) {
+        ProtocolMessage<PlayerAddedBody> message = new ProtocolMessage<>("PlayerAdded", player);
+        sendMessage(CODEC.encode(message));
+      }
+
       String aliveMessage = CODEC.encode(new ProtocolMessage<>("Alive", new AliveBody()));
 
-      heartbeat.scheduleAtFixedRate( () -> {
-        try {
-          sendMessage(aliveMessage);
-        }catch (IOException e) {
-          disconnect();
-        }
-      },5,5, TimeUnit.SECONDS);
+      heartbeat.scheduleAtFixedRate(
+          () -> {
+            try {
+              sendMessage(aliveMessage);
+            } catch (IOException e) {
+              disconnect();
+            }
+          },
+          5,
+          5,
+          TimeUnit.SECONDS);
 
       String message;
       while ((message = reader.readLine()) != null) {
@@ -80,13 +90,34 @@ public class ClientHandler implements Runnable {
         if (CODEC.isAliveMessage(message)) {
           continue;
         }
-        server.broadcast(message);
+
+        ProtocolMessage<JsonObject> incoming;
+
+        try {
+          incoming = CODEC.decode(message);
+        } catch (IllegalArgumentException e) {
+          server.broadcast(message);
+          continue;
+        }
+
+        if ("PlayerValues".equals(incoming.messageType())) {
+          PlayerValuesBody selection =
+              CODEC.decodeBody(incoming.messageBody(), PlayerValuesBody.class);
+          handlePlayerValues(clientId, selection);
+          continue;
+        }
+
+        ErrorBody error = new ErrorBody("Unsupported message type: " + incoming.messageType());
+        sendMessage(CODEC.encode(new ProtocolMessage<>("Error", error)));
       }
     } catch (IOException e) {
       System.err.println(
           "Connection error for " + clientSocket.getRemoteSocketAddress() + ": " + e.getMessage());
     } finally {
       heartbeat.shutdownNow();
+      if(clientId != null) {
+        server.removePlayerSelection(clientId);
+      }
       server.removeClient(this);
     }
   }
@@ -96,7 +127,16 @@ public class ClientHandler implements Runnable {
     writer.flush();
   }
 
+  private void handlePlayerValues(int clientId, PlayerValuesBody selection) throws IOException {
+    if (!server.trySelectFigure(clientId, selection)) {
+      ErrorBody errorBody = new ErrorBody("Figure already taken.");
+      sendMessage(CODEC.encode(new ProtocolMessage<>("Error", errorBody)));
+      return;
+    }
 
+    PlayerAddedBody added = new PlayerAddedBody(clientId, selection.name(), selection.figure());
+    server.broadcast(CODEC.encode(new ProtocolMessage<>("PlayerAdded", added)));
+  }
 
   void disconnect() {
     try {

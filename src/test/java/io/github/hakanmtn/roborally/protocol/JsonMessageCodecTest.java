@@ -288,5 +288,45 @@ class JsonMessageCodecTest {
             .strip();
 
     assertTrue(codec.isAliveMessage(message));
+
+  }
+
+  @Test
+  void encodingPlayerValuesPreservesNameAndFigure(){
+    JsonMessageCodec codec = new JsonMessageCodec();
+    PlayerValuesBody playerValuesBody = new PlayerValuesBody("Nr. 5", 5);
+
+    ProtocolMessage<PlayerValuesBody> sentMessage = new ProtocolMessage<>("PlayerValues", playerValuesBody);
+    String json = codec.encode(sentMessage);
+    JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+    JsonObject body = root.getAsJsonObject("messageBody");
+
+    assertEquals("PlayerValues", root.get("messageType").getAsString());
+    JsonPrimitive figure = body.getAsJsonPrimitive("figure");
+    assertTrue(figure.isNumber());
+    assertEquals(5, figure.getAsInt());
+    assertEquals("Nr. 5", body.get("name").getAsString());
+  }
+
+  @Test
+  void encodingPlayerAddedIdentifiesPlayerAndSelectedFigure() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+    PlayerAddedBody playerAddedBody = new PlayerAddedBody(42, "Nr. 5", 5);
+    ProtocolMessage<PlayerAddedBody> sentMessage =
+        new ProtocolMessage<>("PlayerAdded", playerAddedBody);
+
+    String json = codec.encode(sentMessage);
+    JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+    JsonObject body = root.getAsJsonObject("messageBody");
+    
+    assertEquals("PlayerAdded", root.get("messageType").getAsString());
+    JsonPrimitive clientId = body.getAsJsonPrimitive("clientID");
+    JsonPrimitive figure = body.getAsJsonPrimitive("figure");
+
+    assertTrue(clientId.isNumber());
+    assertEquals(42, clientId.getAsInt());
+    assertTrue(figure.isNumber());
+    assertEquals(5, figure.getAsInt());
+    assertEquals("Nr. 5", body.get("name").getAsString());
   }
 }
