@@ -69,6 +69,11 @@ public class ClientHandler implements Runnable {
         sendMessage(CODEC.encode(message));
       }
 
+      for(PlayerStatusBody status: server.getPlayerStatuses()){
+        ProtocolMessage<PlayerStatusBody> message = new ProtocolMessage<>("PlayerStatus", status);
+        sendMessage(CODEC.encode(message));
+      }
+
       String aliveMessage = CODEC.encode(new ProtocolMessage<>("Alive", new AliveBody()));
 
       heartbeat.scheduleAtFixedRate(
@@ -107,6 +112,13 @@ public class ClientHandler implements Runnable {
           continue;
         }
 
+
+        if("SetStatus".equals(incoming.messageType())) {
+          SetStatusBody statusBody = CODEC.decodeBody(incoming.messageBody(), SetStatusBody.class);
+          handleSetStatus(clientId, statusBody);
+          continue;
+        }
+
         ErrorBody error = new ErrorBody("Unsupported message type: " + incoming.messageType());
         sendMessage(CODEC.encode(new ProtocolMessage<>("Error", error)));
       }
@@ -136,6 +148,16 @@ public class ClientHandler implements Runnable {
 
     PlayerAddedBody added = new PlayerAddedBody(clientId, selection.name(), selection.figure());
     server.broadcast(CODEC.encode(new ProtocolMessage<>("PlayerAdded", added)));
+  }
+
+  private void handleSetStatus(int clientId, SetStatusBody status) throws IOException {
+    if(!server.trySetReady(clientId,status.ready())){
+      ErrorBody errorBody = new ErrorBody("Select a figure before setting your ready status.");
+      sendMessage(CODEC.encode(new ProtocolMessage<>("Error", errorBody)));
+      return;
+    }
+    PlayerStatusBody updatedStatus = new PlayerStatusBody(clientId, status.ready());
+    server.broadcast(CODEC.encode(new ProtocolMessage<>("PlayerStatus", updatedStatus)));
   }
 
   void disconnect() {

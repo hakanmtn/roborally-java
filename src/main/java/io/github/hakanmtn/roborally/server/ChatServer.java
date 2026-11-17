@@ -1,6 +1,7 @@
 package io.github.hakanmtn.roborally.server;
 
 import io.github.hakanmtn.roborally.protocol.PlayerAddedBody;
+import io.github.hakanmtn.roborally.protocol.PlayerStatusBody;
 import io.github.hakanmtn.roborally.protocol.PlayerValuesBody;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -16,6 +17,7 @@ public class ChatServer {
   private final CopyOnWriteArrayList<ClientHandler> activeClients = new CopyOnWriteArrayList<>();
   private int nextClientId = 1;
   private final Map<Integer, PlayerValuesBody> playerSelections = new HashMap<>();
+  private final Map<Integer, Boolean> playerReadyStates = new HashMap<>();
 
   public static void main(String[] args) throws IOException {
     new ChatServer().start();
@@ -83,5 +85,29 @@ public class ChatServer {
 
   synchronized void removePlayerSelection(int clientId) {
     playerSelections.remove(clientId);
+    playerReadyStates.remove(clientId);
+  }
+
+  synchronized boolean trySetReady(int clientId, boolean ready) {
+    if (!playerSelections.containsKey(clientId)) {
+      return false;
+    }
+
+    playerReadyStates.put(clientId, ready);
+
+    return true;
+  }
+
+  synchronized boolean isPlayerReady(int clientId) {
+    return playerReadyStates.getOrDefault(clientId, false);
+  }
+
+  synchronized List<PlayerStatusBody> getPlayerStatuses() {
+    List<PlayerStatusBody> statuses = new ArrayList<>();
+
+    for (int clientId : playerSelections.keySet()) {
+      statuses.add(new PlayerStatusBody(clientId, isPlayerReady(clientId)));
+    }
+    return statuses;
   }
 }

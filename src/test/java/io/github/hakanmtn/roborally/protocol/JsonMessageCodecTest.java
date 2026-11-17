@@ -288,15 +288,15 @@ class JsonMessageCodecTest {
             .strip();
 
     assertTrue(codec.isAliveMessage(message));
-
   }
 
   @Test
-  void encodingPlayerValuesPreservesNameAndFigure(){
+  void encodingPlayerValuesPreservesNameAndFigure() {
     JsonMessageCodec codec = new JsonMessageCodec();
     PlayerValuesBody playerValuesBody = new PlayerValuesBody("Nr. 5", 5);
 
-    ProtocolMessage<PlayerValuesBody> sentMessage = new ProtocolMessage<>("PlayerValues", playerValuesBody);
+    ProtocolMessage<PlayerValuesBody> sentMessage =
+        new ProtocolMessage<>("PlayerValues", playerValuesBody);
     String json = codec.encode(sentMessage);
     JsonObject root = JsonParser.parseString(json).getAsJsonObject();
     JsonObject body = root.getAsJsonObject("messageBody");
@@ -318,7 +318,7 @@ class JsonMessageCodecTest {
     String json = codec.encode(sentMessage);
     JsonObject root = JsonParser.parseString(json).getAsJsonObject();
     JsonObject body = root.getAsJsonObject("messageBody");
-    
+
     assertEquals("PlayerAdded", root.get("messageType").getAsString());
     JsonPrimitive clientId = body.getAsJsonPrimitive("clientID");
     JsonPrimitive figure = body.getAsJsonPrimitive("figure");
@@ -328,5 +328,42 @@ class JsonMessageCodecTest {
     assertTrue(figure.isNumber());
     assertEquals(5, figure.getAsInt());
     assertEquals("Nr. 5", body.get("name").getAsString());
+  }
+
+  @Test
+  void encodingSetStatusPreservesFalseReadyValue() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+    SetStatusBody setBody = new SetStatusBody(false);
+    ProtocolMessage<SetStatusBody> sentMessage = new ProtocolMessage<>("SetStatus", setBody);
+
+    String json = codec.encode(sentMessage);
+    JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+    JsonObject body = root.getAsJsonObject("messageBody");
+
+    assertEquals("SetStatus", root.get("messageType").getAsString());
+
+    assertTrue(body.getAsJsonPrimitive("ready").isBoolean());
+    assertFalse(body.get("ready").getAsBoolean());
+  }
+
+  @Test
+  void encodingPlayerStatusIdentifiesReadyPlayer() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+    PlayerStatusBody playerStatusBody = new PlayerStatusBody(42, true);
+    ProtocolMessage<PlayerStatusBody> sentMessage =
+        new ProtocolMessage<>("PlayerStatus", playerStatusBody);
+
+    String json = codec.encode(sentMessage);
+    JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+    JsonObject body = root.getAsJsonObject("messageBody");
+
+    assertEquals("PlayerStatus", root.get("messageType").getAsString());
+
+    assertTrue(body.getAsJsonPrimitive("clientID").isNumber());
+    assertEquals(42, body.getAsJsonPrimitive("clientID").getAsInt());
+
+    JsonPrimitive ready = body.getAsJsonPrimitive("ready");
+    assertTrue(ready.isBoolean());
+    assertTrue(ready.getAsBoolean());
   }
 }

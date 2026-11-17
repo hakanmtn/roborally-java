@@ -2,7 +2,6 @@ package io.github.hakanmtn.roborally.client;
 
 import com.google.gson.JsonObject;
 import io.github.hakanmtn.roborally.protocol.*;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -36,8 +35,7 @@ public class ChatClient {
         return;
       }
 
-      HelloClientBody body =
-              codec.decodeBody(greeting.messageBody(), HelloClientBody.class);
+      HelloClientBody body = codec.decodeBody(greeting.messageBody(), HelloClientBody.class);
       System.out.println("Server protocol: " + body.protocol());
 
       HelloServerBody clientBody = new HelloServerBody("RoboRally", false, "Version 0.1");
@@ -52,13 +50,13 @@ public class ChatClient {
 
       ProtocolMessage<JsonObject> response = codec.decode(responseLine);
 
-      if("Error".equals(response.messageType())) {
+      if ("Error".equals(response.messageType())) {
         ErrorBody error = codec.decodeBody(response.messageBody(), ErrorBody.class);
         System.err.println("Server error: " + error.error());
         return;
       }
 
-      if(!"Welcome".equals(response.messageType())) {
+      if (!"Welcome".equals(response.messageType())) {
         System.err.println("Expected Welcome, received" + response.messageType());
         return;
       }
@@ -74,8 +72,8 @@ public class ChatClient {
                   String message;
                   while ((message = reader.readLine()) != null) {
 
-                    if(codec.isAliveMessage(message)) {
-                      sendMessage(writer,message);
+                    if (codec.isAliveMessage(message)) {
+                      sendMessage(writer, message);
                       continue;
                     }
 
