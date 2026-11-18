@@ -5,6 +5,7 @@ import io.github.hakanmtn.roborally.protocol.*;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -15,6 +16,7 @@ public class ClientHandler implements Runnable {
   private final OutputStreamWriter writer;
   private final ChatServer server;
   private static final JsonMessageCodec CODEC = new JsonMessageCodec();
+  private volatile Integer clientId;
 
   public ClientHandler(Socket clientSocket, ChatServer server) throws IOException {
     this.clientSocket = clientSocket;
@@ -25,7 +27,7 @@ public class ClientHandler implements Runnable {
   @Override
   public void run() {
     ScheduledExecutorService heartbeat = Executors.newSingleThreadScheduledExecutor();
-    Integer clientId = null;
+
     try (Socket socket = clientSocket) {
       var reader =
           new BufferedReader(
@@ -64,12 +66,12 @@ public class ClientHandler implements Runnable {
       ProtocolMessage<WelcomeBody> welcome = new ProtocolMessage<>("Welcome", welcomeBody);
       sendMessage(CODEC.encode(welcome));
 
-      for(PlayerAddedBody player : server.getSelectedPlayers()) {
+      for (PlayerAddedBody player : server.getSelectedPlayers()) {
         ProtocolMessage<PlayerAddedBody> message = new ProtocolMessage<>("PlayerAdded", player);
         sendMessage(CODEC.encode(message));
       }
 
-      for(PlayerStatusBody status: server.getPlayerStatuses()){
+      for (PlayerStatusBody status : server.getPlayerStatuses()) {
         ProtocolMessage<PlayerStatusBody> message = new ProtocolMessage<>("PlayerStatus", status);
         sendMessage(CODEC.encode(message));
       }
@@ -112,10 +114,16 @@ public class ClientHandler implements Runnable {
           continue;
         }
 
-
-        if("SetStatus".equals(incoming.messageType())) {
+        if ("SetStatus".equals(incoming.messageType())) {
           SetStatusBody statusBody = CODEC.decodeBody(incoming.messageBody(), SetStatusBody.class);
           handleSetStatus(clientId, statusBody);
+          continue;
+        }
+
+        if ("MapSelected".equals(incoming.messageType())) {
+          MapSelectedBody selection =
+              CODEC.decodeBody(incoming.messageBody(), MapSelectedBody.class);
+          handleMapSelected(clientId, selection);
           continue;
         }
 
@@ -127,10 +135,17 @@ public class ClientHandler implements Runnable {
           "Connection error for " + clientSocket.getRemoteSocketAddress() + ": " + e.getMessage());
     } finally {
       heartbeat.shutdownNow();
-      if(clientId != null) {
+
+      Integer previousSelectorId = server.getMapSelectorId();
+      if (clientId != null) {
         server.removePlayerSelection(clientId);
       }
       server.removeClient(this);
+
+      Integer currentSelectorId = server.getMapSelectorId();
+      if(!Objects.equals(previousSelectorId, currentSelectorId)) {
+        server.requestMapSelection();
+      }
     }
   }
 
@@ -139,7 +154,12 @@ public class ClientHandler implements Runnable {
     writer.flush();
   }
 
+  Integer getClientId() {
+    return clientId;
+  }
+
   private void handlePlayerValues(int clientId, PlayerValuesBody selection) throws IOException {
+
     if (!server.trySelectFigure(clientId, selection)) {
       ErrorBody errorBody = new ErrorBody("Figure already taken.");
       sendMessage(CODEC.encode(new ProtocolMessage<>("Error", errorBody)));
@@ -151,13 +171,33 @@ public class ClientHandler implements Runnable {
   }
 
   private void handleSetStatus(int clientId, SetStatusBody status) throws IOException {
-    if(!server.trySetReady(clientId,status.ready())){
+
+    Integer previousSelectorId = server.getMapSelectorId();
+    if (!server.trySetReady(clientId, status.ready())) {
       ErrorBody errorBody = new ErrorBody("Select a figure before setting your ready status.");
       sendMessage(CODEC.encode(new ProtocolMessage<>("Error", errorBody)));
       return;
     }
+
     PlayerStatusBody updatedStatus = new PlayerStatusBody(clientId, status.ready());
     server.broadcast(CODEC.encode(new ProtocolMessage<>("PlayerStatus", updatedStatus)));
+
+    Integer currentSelectorId = server.getMapSelectorId();
+    if (!Objects.equals(previousSelectorId, currentSelectorId)) {
+      server.requestMapSelection();
+    }
+  }
+
+  private void handleMapSelected(int clientId, MapSelectedBody selection) throws IOException {
+
+    if (!server.trySelectMap(clientId, selection.map())) {
+      ErrorBody error =
+          new ErrorBody("Map selection rejected. Check your selection turn and map name.");
+      sendMessage(CODEC.encode(new ProtocolMessage<>("Error", error)));
+      return;
+    }
+
+    server.broadcast(CODEC.encode(new ProtocolMessage<>("MapSelected", selection)));
   }
 
   void disconnect() {

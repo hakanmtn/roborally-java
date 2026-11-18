@@ -2,10 +2,13 @@ package io.github.hakanmtn.roborally.protocol;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 class JsonMessageCodecTest {
 
@@ -365,5 +368,44 @@ class JsonMessageCodecTest {
     JsonPrimitive ready = body.getAsJsonPrimitive("ready");
     assertTrue(ready.isBoolean());
     assertTrue(ready.getAsBoolean());
+  }
+
+  @Test
+  void encodingSelectMapPreservesAvailableMaps(){
+    JsonMessageCodec codec = new JsonMessageCodec();
+    SelectMapBody sentBody = new SelectMapBody(List.of("Dizzy Highway"));
+    ProtocolMessage<SelectMapBody> sentMessage = new ProtocolMessage<>("SelectMap", sentBody);
+
+    String json = codec.encode(sentMessage);
+    JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+    JsonObject body = root.getAsJsonObject("messageBody");
+
+
+    assertEquals("SelectMap", root.get("messageType").getAsString());
+    assertTrue(body.getAsJsonArray("availableMaps").isJsonArray());
+
+    JsonArray availableMaps = body.getAsJsonArray("availableMaps");
+
+    assertEquals(1, availableMaps.size());
+
+    assertEquals("Dizzy Highway", availableMaps.get(0).getAsString());
+
+  }
+
+  @Test
+  void encodingMapSelectedPreservesChosenMap(){
+    JsonMessageCodec codec = new JsonMessageCodec();
+    MapSelectedBody sentBody = new MapSelectedBody("Dizzy Highway");
+    ProtocolMessage<MapSelectedBody> sentMessage = new ProtocolMessage<>("MapSelected", sentBody);
+
+    String json = codec.encode(sentMessage);
+    JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+    JsonObject body = root.getAsJsonObject("messageBody");
+
+    assertEquals("MapSelected", root.get("messageType").getAsString());
+
+    JsonPrimitive chosenMap = body.getAsJsonPrimitive("map");
+    assertTrue(chosenMap.isString());
+    assertEquals("Dizzy Highway", chosenMap.getAsString());
   }
 }
