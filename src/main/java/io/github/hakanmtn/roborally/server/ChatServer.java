@@ -54,18 +54,20 @@ public class ChatServer {
     }
   }
 
-  void sendToClient(int clientId, String message) {
+  boolean sendToClient(int clientId, String message) {
     for (ClientHandler client : activeClients) {
       if (Objects.equals(clientId, client.getClientId())) {
         try {
           client.sendMessage(message);
+          return true;
         } catch (IOException e) {
           System.err.println("Could not send to client: " + e.getMessage());
           client.disconnect();
+          return false;
         }
-        return;
       }
     }
+    return false;
   }
 
   void requestMapSelection() {

@@ -408,4 +408,50 @@ class JsonMessageCodecTest {
     assertTrue(chosenMap.isString());
     assertEquals("Dizzy Highway", chosenMap.getAsString());
   }
+
+  @Test
+  void encodingSendChatPreservesMessageAndPublicRecipient(){
+    JsonMessageCodec codec = new JsonMessageCodec();
+    SendChatBody sentBody = new SendChatBody("Hello", -1);
+    ProtocolMessage<SendChatBody> sentMessage = new ProtocolMessage<>("SendChat", sentBody);
+    String json = codec.encode(sentMessage);
+
+    JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+    JsonObject body = root.getAsJsonObject("messageBody");
+
+    assertEquals("SendChat", root.get("messageType").getAsString());
+
+    JsonPrimitive message = body.getAsJsonPrimitive("message");
+    assertTrue(message.isString());
+    assertEquals("Hello", message.getAsString());
+
+    JsonPrimitive to = body.getAsJsonPrimitive("to");
+    assertTrue(to.isNumber());
+    assertEquals(-1, to.getAsInt());
+  }
+
+  @Test
+  void encodingReceivedChatPreservesSenderAndPrivacy(){
+    JsonMessageCodec codec = new JsonMessageCodec();
+    ReceivedChatBody sentBody = new ReceivedChatBody("Hello", 42, true);
+    ProtocolMessage<ReceivedChatBody> sentMessage = new ProtocolMessage<>("ReceivedChat", sentBody);
+    String json = codec.encode(sentMessage);
+    JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+    JsonObject body = root.getAsJsonObject("messageBody");
+
+    assertEquals("ReceivedChat", root.get("messageType").getAsString());
+
+    JsonPrimitive message = body.getAsJsonPrimitive("message");
+    assertTrue(message.isString());
+    assertEquals("Hello", message.getAsString());
+
+    JsonPrimitive from = body.getAsJsonPrimitive("from");
+    assertTrue(from.isNumber());
+    assertEquals(42, from.getAsInt());
+
+    JsonPrimitive isPrivate = body.getAsJsonPrimitive("isPrivate");
+    assertTrue(isPrivate.isBoolean());
+    assertTrue(isPrivate.getAsBoolean());
+
+  }
 }

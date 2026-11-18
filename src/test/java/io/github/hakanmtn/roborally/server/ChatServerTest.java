@@ -281,4 +281,11 @@ class ChatServerTest {
 
     assertEquals("Dizzy Highway", chatServer.getSelectedMap());
   }
+
+  @Test
+  void sendingToUnknownClientReturnsFalse() {
+    ChatServer chatServer = new ChatServer();
+
+    assertFalse(chatServer.sendToClient(42, "Hello"));
+  }
 }

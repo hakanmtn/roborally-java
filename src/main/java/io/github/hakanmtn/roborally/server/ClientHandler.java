@@ -76,6 +76,15 @@ public class ClientHandler implements Runnable {
         sendMessage(CODEC.encode(message));
       }
 
+      String selectedMap = server.getSelectedMap();
+
+      if (selectedMap != null) {
+        MapSelectedBody mapSelectedBody = new MapSelectedBody(selectedMap);
+        ProtocolMessage<MapSelectedBody> message =
+            new ProtocolMessage<>("MapSelected", mapSelectedBody);
+        sendMessage(CODEC.encode(message));
+      }
+
       String aliveMessage = CODEC.encode(new ProtocolMessage<>("Alive", new AliveBody()));
 
       heartbeat.scheduleAtFixedRate(
@@ -127,6 +136,12 @@ public class ClientHandler implements Runnable {
           continue;
         }
 
+        if ("SendChat".equals(incoming.messageType())) {
+          SendChatBody chatBody = CODEC.decodeBody(incoming.messageBody(), SendChatBody.class);
+          handleSendChat(clientId, chatBody);
+          continue;
+        }
+
         ErrorBody error = new ErrorBody("Unsupported message type: " + incoming.messageType());
         sendMessage(CODEC.encode(new ProtocolMessage<>("Error", error)));
       }
@@ -143,7 +158,7 @@ public class ClientHandler implements Runnable {
       server.removeClient(this);
 
       Integer currentSelectorId = server.getMapSelectorId();
-      if(!Objects.equals(previousSelectorId, currentSelectorId)) {
+      if (!Objects.equals(previousSelectorId, currentSelectorId)) {
         server.requestMapSelection();
       }
     }
@@ -198,6 +213,26 @@ public class ClientHandler implements Runnable {
     }
 
     server.broadcast(CODEC.encode(new ProtocolMessage<>("MapSelected", selection)));
+  }
+
+  private void handleSendChat(int clientId, SendChatBody chat) throws IOException {
+    boolean isPrivate = chat.to() != -1;
+
+    ReceivedChatBody receivedChat = new ReceivedChatBody(chat.message(), clientId, isPrivate);
+    ProtocolMessage<ReceivedChatBody> reply = new ProtocolMessage<>("ReceivedChat", receivedChat);
+    String json = CODEC.encode(reply);
+
+    if (isPrivate) {
+      boolean sent = server.sendToClient(chat.to(), json);
+      if (!sent) {
+        ErrorBody errorBody =
+            new ErrorBody("Could not send private message to client " + chat.to() + ".");
+        sendMessage(CODEC.encode(new ProtocolMessage<>("Error", errorBody)));
+      }
+
+    } else {
+      server.broadcast(json);
+    }
   }
 
   void disconnect() {
