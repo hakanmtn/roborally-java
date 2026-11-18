@@ -77,6 +77,23 @@ public class ChatClient {
                       continue;
                     }
 
+                    ProtocolMessage<JsonObject> incoming = codec.decode(message);
+
+                    if ("ReceivedChat".equals(incoming.messageType())) {
+                      ReceivedChatBody chat =
+                              codec.decodeBody(incoming.messageBody(), ReceivedChatBody.class);
+
+                      String prefix = chat.isPrivate() ? "[Private] " : "";
+                      System.out.println(prefix + "Client " + chat.from() + ": " + chat.message());
+                      continue;
+                    }
+
+                    if("Error".equals(incoming.messageType())) {
+                      ErrorBody error = codec.decodeBody(incoming.messageBody(), ErrorBody.class);
+                      System.err.println("Server error: " + error.error());
+                      continue;
+                    }
+
                     System.out.println("Server: " + message);
                   }
                 } catch (IOException e) {
@@ -91,7 +108,8 @@ public class ChatClient {
       BufferedReader console =
           new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
 
-      System.out.println("Enter a message, or /quit to disconnect.");
+      System.out.println(
+          "Enter a message, /raw <json> to send a protocol message, or /quit to disconnect.");
 
       String message;
       while ((message = console.readLine()) != null) {
@@ -99,7 +117,18 @@ public class ChatClient {
           break;
         }
 
-        sendMessage(writer, message);
+        if (message.isEmpty()) {
+          continue;
+        }
+
+        if (message.startsWith("/raw ")) {
+          sendMessage(writer, message.substring(5));
+          continue;
+        }
+
+        SendChatBody sendChatBody = new SendChatBody(message, -1);
+        ProtocolMessage<SendChatBody> chat = new ProtocolMessage<>("SendChat", sendChatBody);
+        sendMessage(writer, codec.encode(chat));
       }
     }
   }

@@ -112,7 +112,8 @@ public class ClientHandler implements Runnable {
         try {
           incoming = CODEC.decode(message);
         } catch (IllegalArgumentException e) {
-          server.broadcast(message);
+          ErrorBody errorBody = new ErrorBody("Invalid protocol message.");
+          sendMessage(CODEC.encode(new ProtocolMessage<>("Error", errorBody)));
           continue;
         }
 
