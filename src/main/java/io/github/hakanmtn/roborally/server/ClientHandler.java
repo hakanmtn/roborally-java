@@ -138,7 +138,16 @@ public class ClientHandler implements Runnable {
         }
 
         if ("SendChat".equals(incoming.messageType())) {
-          SendChatBody chatBody = CODEC.decodeBody(incoming.messageBody(), SendChatBody.class);
+          SendChatBody chatBody;
+
+          try {
+
+            chatBody = CODEC.decodeBody(incoming.messageBody(), SendChatBody.class);
+          } catch (IllegalArgumentException e) {
+            ErrorBody errorBody = new ErrorBody(e.getMessage());
+            sendMessage(CODEC.encode(new ProtocolMessage<>("Error", errorBody)));
+            continue;
+          }
           handleSendChat(clientId, chatBody);
           continue;
         }

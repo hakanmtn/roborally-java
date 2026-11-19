@@ -52,8 +52,39 @@ public class JsonMessageCodec {
   }
 
   public <T> T decodeBody(JsonObject body, Class<T> bodyType) {
-    return gson.fromJson(body, bodyType);
+    if (bodyType == SendChatBody.class) {
+      JsonElement message = body.get("message");
 
+      if (message == null || message.isJsonNull()) {
+        throw new IllegalArgumentException("Chat message is required");
+      }
+
+      if (!message.isJsonPrimitive() || !message.getAsJsonPrimitive().isString()) {
+        throw new IllegalArgumentException("Chat message must be a JSON string");
+      }
+
+      JsonElement recipient = body.get("to");
+      if (recipient == null || recipient.isJsonNull()) {
+        throw new IllegalArgumentException("Chat recipient is required");
+      }
+
+      if (!recipient.isJsonPrimitive() || !recipient.getAsJsonPrimitive().isNumber()) {
+        throw new IllegalArgumentException("Chat recipient must be a JSON number");
+      }
+
+      int recipientId;
+      try {
+        recipientId = recipient.getAsBigDecimal().intValueExact();
+      } catch (ArithmeticException | NumberFormatException e) {
+        throw new IllegalArgumentException(
+            "Chat recipient must be an integer within the int range", e);
+      }
+
+      if (recipientId != -1 && recipientId <= 0) {
+        throw new IllegalArgumentException("Chat recipient must be -1 or a positive client ID");
+      }
+    }
+    return gson.fromJson(body, bodyType);
   }
 
   public boolean isAliveMessage(String message) {
@@ -64,6 +95,4 @@ public class JsonMessageCodec {
       return false;
     }
   }
-
-
 }

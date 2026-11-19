@@ -6,9 +6,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
+import org.junit.jupiter.api.Test;
 
 class JsonMessageCodecTest {
 
@@ -371,7 +370,7 @@ class JsonMessageCodecTest {
   }
 
   @Test
-  void encodingSelectMapPreservesAvailableMaps(){
+  void encodingSelectMapPreservesAvailableMaps() {
     JsonMessageCodec codec = new JsonMessageCodec();
     SelectMapBody sentBody = new SelectMapBody(List.of("Dizzy Highway"));
     ProtocolMessage<SelectMapBody> sentMessage = new ProtocolMessage<>("SelectMap", sentBody);
@@ -379,7 +378,6 @@ class JsonMessageCodecTest {
     String json = codec.encode(sentMessage);
     JsonObject root = JsonParser.parseString(json).getAsJsonObject();
     JsonObject body = root.getAsJsonObject("messageBody");
-
 
     assertEquals("SelectMap", root.get("messageType").getAsString());
     assertTrue(body.getAsJsonArray("availableMaps").isJsonArray());
@@ -389,11 +387,10 @@ class JsonMessageCodecTest {
     assertEquals(1, availableMaps.size());
 
     assertEquals("Dizzy Highway", availableMaps.get(0).getAsString());
-
   }
 
   @Test
-  void encodingMapSelectedPreservesChosenMap(){
+  void encodingMapSelectedPreservesChosenMap() {
     JsonMessageCodec codec = new JsonMessageCodec();
     MapSelectedBody sentBody = new MapSelectedBody("Dizzy Highway");
     ProtocolMessage<MapSelectedBody> sentMessage = new ProtocolMessage<>("MapSelected", sentBody);
@@ -410,7 +407,7 @@ class JsonMessageCodecTest {
   }
 
   @Test
-  void encodingSendChatPreservesMessageAndPublicRecipient(){
+  void encodingSendChatPreservesMessageAndPublicRecipient() {
     JsonMessageCodec codec = new JsonMessageCodec();
     SendChatBody sentBody = new SendChatBody("Hello", -1);
     ProtocolMessage<SendChatBody> sentMessage = new ProtocolMessage<>("SendChat", sentBody);
@@ -431,7 +428,7 @@ class JsonMessageCodecTest {
   }
 
   @Test
-  void encodingReceivedChatPreservesSenderAndPrivacy(){
+  void encodingReceivedChatPreservesSenderAndPrivacy() {
     JsonMessageCodec codec = new JsonMessageCodec();
     ReceivedChatBody sentBody = new ReceivedChatBody("Hello", 42, true);
     ProtocolMessage<ReceivedChatBody> sentMessage = new ProtocolMessage<>("ReceivedChat", sentBody);
@@ -452,6 +449,146 @@ class JsonMessageCodecTest {
     JsonPrimitive isPrivate = body.getAsJsonPrimitive("isPrivate");
     assertTrue(isPrivate.isBoolean());
     assertTrue(isPrivate.getAsBoolean());
+  }
 
+  @Test
+  void decodingSendChatWithoutMessageThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body =
+        JsonParser.parseString(
+                """
+            {"to":-1}
+            """)
+            .getAsJsonObject();
+
+    assertThrows(IllegalArgumentException.class, () -> codec.decodeBody(body, SendChatBody.class));
+  }
+
+  @Test
+  void decodingSendChatWithNullMessageThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+    JsonObject body =
+        JsonParser.parseString(
+                """
+        {"message":null,"to":-1}
+        """)
+            .getAsJsonObject();
+    assertThrows(IllegalArgumentException.class, () -> codec.decodeBody(body, SendChatBody.class));
+  }
+
+  @Test
+  void decodingSendChatWithNumericMessageThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body =
+        JsonParser.parseString(
+                """
+            {"message":42,"to":-1}
+            """)
+            .getAsJsonObject();
+
+    assertThrows(IllegalArgumentException.class, () -> codec.decodeBody(body, SendChatBody.class));
+  }
+
+  @Test
+  void decodingSendChatWithoutRecipientThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body =
+        JsonParser.parseString(
+                """
+            {"message":"Hello"}
+            """)
+            .getAsJsonObject();
+
+    assertThrows(IllegalArgumentException.class, () -> codec.decodeBody(body, SendChatBody.class));
+  }
+
+  @Test
+  void decodingSendChatWithStringRecipientThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body =
+        JsonParser.parseString(
+                """
+            {"message":"Hello","to":"2"}
+            """)
+            .getAsJsonObject();
+
+    assertThrows(IllegalArgumentException.class, () -> codec.decodeBody(body, SendChatBody.class));
+  }
+
+  @Test
+  void decodingSendChatWithFractionalRecipientThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+    JsonObject body =
+        JsonParser.parseString(
+                """
+        {"message":"Hello","to":2.5}
+        """)
+            .getAsJsonObject();
+    assertThrows(IllegalArgumentException.class, () -> codec.decodeBody(body, SendChatBody.class));
+  }
+
+  @Test
+  void decodingSendChatWithZeroRecipientThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+    JsonObject body =
+        JsonParser.parseString(
+                """
+            {"message":"Hello","to":0}
+            """)
+            .getAsJsonObject();
+
+    assertThrows(IllegalArgumentException.class, () -> codec.decodeBody(body, SendChatBody.class));
+  }
+
+  @Test
+  void decodingSendChatWithInvalidNegativeRecipientThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body =
+        JsonParser.parseString(
+                """
+            {"message":"Hello","to":-2}
+            """)
+            .getAsJsonObject();
+
+    assertThrows(IllegalArgumentException.class, () -> codec.decodeBody(body, SendChatBody.class));
+  }
+
+  @Test
+  void decodingSendChatAllowsPublicRecipient() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body =
+        JsonParser.parseString(
+                """
+            {"message":"Hello","to":-1}
+            """)
+            .getAsJsonObject();
+
+    SendChatBody chat = codec.decodeBody(body, SendChatBody.class);
+
+    assertEquals("Hello", chat.message());
+    assertEquals(-1, chat.to());
+  }
+
+  @Test
+  void decodingSendChatAllowsPositiveRecipient() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body =
+        JsonParser.parseString(
+                """
+            {"message":"Hello Sam","to":1}
+            """)
+            .getAsJsonObject();
+
+    SendChatBody chat = codec.decodeBody(body, SendChatBody.class);
+
+    assertEquals("Hello Sam", chat.message());
+    assertEquals(1, chat.to());
   }
 }
