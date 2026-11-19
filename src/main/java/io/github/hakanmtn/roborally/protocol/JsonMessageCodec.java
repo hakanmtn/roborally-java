@@ -84,6 +84,44 @@ public class JsonMessageCodec {
         throw new IllegalArgumentException("Chat recipient must be -1 or a positive client ID");
       }
     }
+
+    if (bodyType == SetStatusBody.class) {
+      JsonElement ready = body.get("ready");
+      if (ready == null || ready.isJsonNull()) {
+        throw new IllegalArgumentException("Ready status is required");
+      }
+      if (!ready.isJsonPrimitive() || !ready.getAsJsonPrimitive().isBoolean()) {
+        throw new IllegalArgumentException("Ready status must be a JSON boolean");
+      }
+    }
+
+    if (bodyType == PlayerValuesBody.class) {
+      JsonElement name = body.get("name");
+      if (name == null || name.isJsonNull()) {
+        throw new IllegalArgumentException("Player name is required");
+      }
+
+      if (!name.isJsonPrimitive() || !name.getAsJsonPrimitive().isString()) {
+        throw new IllegalArgumentException("Player name must be a JSON string");
+      }
+
+      JsonElement figure = body.get("figure");
+      if (figure == null || figure.isJsonNull()) {
+        throw new IllegalArgumentException("Player figure is required");
+      }
+
+      if (!figure.isJsonPrimitive() || !figure.getAsJsonPrimitive().isNumber()) {
+        throw new IllegalArgumentException("Player figure must be a JSON number");
+      }
+
+      try {
+        figure.getAsBigDecimal().intValueExact();
+      } catch (ArithmeticException | NumberFormatException e) {
+        throw new IllegalArgumentException(
+            "Player figure must be an integer within the int range", e);
+      }
+    }
+
     return gson.fromJson(body, bodyType);
   }
 

@@ -591,4 +591,111 @@ class JsonMessageCodecTest {
     assertEquals("Hello Sam", chat.message());
     assertEquals(1, chat.to());
   }
+
+  @Test
+  void decodingSetStatusWithoutReadyThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+    JsonObject body = new JsonObject();
+
+    assertThrows(IllegalArgumentException.class, () -> codec.decodeBody(body, SetStatusBody.class));
+  }
+
+  @Test
+  void decodingSetStatusAllowsFalseReadyValue() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body =
+        JsonParser.parseString(
+                """
+            {"ready":false}
+            """)
+            .getAsJsonObject();
+
+    SetStatusBody status = codec.decodeBody(body, SetStatusBody.class);
+
+    assertFalse(status.ready());
+  }
+
+  @Test
+  void decodingSetStatusWithStringReadyThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body =
+        JsonParser.parseString(
+                """
+            {"ready":"false"}
+            """)
+            .getAsJsonObject();
+
+    assertThrows(IllegalArgumentException.class, () -> codec.decodeBody(body, SetStatusBody.class));
+  }
+
+  @Test
+  void decodingPlayerValuesWithoutNameThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body =
+        JsonParser.parseString(
+                """
+            {"figure":5}
+            """)
+            .getAsJsonObject();
+
+    assertThrows(
+        IllegalArgumentException.class, () -> codec.decodeBody(body, PlayerValuesBody.class));
+  }
+
+  @Test
+  void decodingPlayerValuesWithNumericNameThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body = JsonParser.parseString("""
+            {"name":42,"figure":5}
+            """).getAsJsonObject();
+
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> codec.decodeBody(body, PlayerValuesBody.class));
+  }
+
+  @Test
+  void decodingPlayerValuesWithoutFigureThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body = JsonParser.parseString("""
+            {"name":"Alex"}
+            """).getAsJsonObject();
+
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> codec.decodeBody(body, PlayerValuesBody.class));
+  }
+
+  @Test
+  void decodingPlayerValuesWithFractionalFigureThrowsException(){
+    JsonMessageCodec codec = new JsonMessageCodec();
+    JsonObject body = JsonParser.parseString("""
+        {"name":"Alex","figure":2.5}
+        """).getAsJsonObject();
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> codec.decodeBody(body, PlayerValuesBody.class));
+
+  }
+
+  @Test
+  void decodingPlayerValuesPreservesValidSelection() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body = JsonParser.parseString("""
+            {"name":"Alex","figure":5}
+            """).getAsJsonObject();
+
+    PlayerValuesBody selection =
+            codec.decodeBody(body, PlayerValuesBody.class);
+
+    assertEquals("Alex", selection.name());
+    assertEquals(5, selection.figure());
+  }
 }

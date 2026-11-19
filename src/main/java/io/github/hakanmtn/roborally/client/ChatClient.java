@@ -81,14 +81,14 @@ public class ChatClient {
 
                     if ("ReceivedChat".equals(incoming.messageType())) {
                       ReceivedChatBody chat =
-                              codec.decodeBody(incoming.messageBody(), ReceivedChatBody.class);
+                          codec.decodeBody(incoming.messageBody(), ReceivedChatBody.class);
 
                       String prefix = chat.isPrivate() ? "[Private] " : "";
                       System.out.println(prefix + "Client " + chat.from() + ": " + chat.message());
                       continue;
                     }
 
-                    if("Error".equals(incoming.messageType())) {
+                    if ("Error".equals(incoming.messageType())) {
                       ErrorBody error = codec.decodeBody(incoming.messageBody(), ErrorBody.class);
                       System.err.println("Server error: " + error.error());
                       continue;

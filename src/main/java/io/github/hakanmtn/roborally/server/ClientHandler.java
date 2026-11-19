@@ -118,14 +118,31 @@ public class ClientHandler implements Runnable {
         }
 
         if ("PlayerValues".equals(incoming.messageType())) {
-          PlayerValuesBody selection =
-              CODEC.decodeBody(incoming.messageBody(), PlayerValuesBody.class);
+          PlayerValuesBody selection;
+
+          try {
+            selection =
+                    CODEC.decodeBody(incoming.messageBody(), PlayerValuesBody.class);
+          } catch (IllegalArgumentException e) {
+            ErrorBody error = new ErrorBody(e.getMessage());
+            sendMessage(CODEC.encode(new ProtocolMessage<>("Error", error)));
+            continue;
+          }
           handlePlayerValues(clientId, selection);
           continue;
         }
 
         if ("SetStatus".equals(incoming.messageType())) {
-          SetStatusBody statusBody = CODEC.decodeBody(incoming.messageBody(), SetStatusBody.class);
+          SetStatusBody statusBody;
+          try {
+            statusBody = CODEC.decodeBody(incoming.messageBody(), SetStatusBody.class);
+          } catch (IllegalArgumentException e) {
+
+            ErrorBody error = new ErrorBody(e.getMessage());
+            sendMessage(CODEC.encode(new ProtocolMessage<>("Error", error)));
+            continue;
+          }
+
           handleSetStatus(clientId, statusBody);
           continue;
         }
