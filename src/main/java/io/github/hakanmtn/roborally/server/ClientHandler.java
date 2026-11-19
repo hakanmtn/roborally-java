@@ -121,8 +121,7 @@ public class ClientHandler implements Runnable {
           PlayerValuesBody selection;
 
           try {
-            selection =
-                    CODEC.decodeBody(incoming.messageBody(), PlayerValuesBody.class);
+            selection = CODEC.decodeBody(incoming.messageBody(), PlayerValuesBody.class);
           } catch (IllegalArgumentException e) {
             ErrorBody error = new ErrorBody(e.getMessage());
             sendMessage(CODEC.encode(new ProtocolMessage<>("Error", error)));
@@ -148,8 +147,15 @@ public class ClientHandler implements Runnable {
         }
 
         if ("MapSelected".equals(incoming.messageType())) {
-          MapSelectedBody selection =
-              CODEC.decodeBody(incoming.messageBody(), MapSelectedBody.class);
+          MapSelectedBody selection;
+
+          try {
+            selection = CODEC.decodeBody(incoming.messageBody(), MapSelectedBody.class);
+          } catch (IllegalArgumentException e) {
+            ErrorBody error = new ErrorBody(e.getMessage());
+            sendMessage(CODEC.encode(new ProtocolMessage<>("Error", error)));
+            continue;
+          }
           handleMapSelected(clientId, selection);
           continue;
         }

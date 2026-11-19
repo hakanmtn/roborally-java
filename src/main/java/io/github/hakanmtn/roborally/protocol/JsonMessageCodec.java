@@ -122,6 +122,16 @@ public class JsonMessageCodec {
       }
     }
 
+    if(bodyType == MapSelectedBody.class) {
+      JsonElement map = body.get("map");
+      if (map == null || map.isJsonNull()) {
+        throw new IllegalArgumentException("Map name is required");
+      }
+      if (!map.isJsonPrimitive() || !map.getAsJsonPrimitive().isString()) {
+        throw new IllegalArgumentException("Map name must be a JSON string");
+      }
+    }
+
     return gson.fromJson(body, bodyType);
   }
 

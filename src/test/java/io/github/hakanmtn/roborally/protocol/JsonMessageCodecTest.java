@@ -698,4 +698,42 @@ class JsonMessageCodecTest {
     assertEquals("Alex", selection.name());
     assertEquals(5, selection.figure());
   }
+
+  @Test
+  void decodingMapSelectedWithoutMapThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+    JsonObject body = new JsonObject();
+
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> codec.decodeBody(body, MapSelectedBody.class));
+  }
+
+  @Test
+  void decodingMapSelectedWithNumericMapThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body = JsonParser.parseString("""
+            {"map":42}
+            """).getAsJsonObject();
+
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> codec.decodeBody(body, MapSelectedBody.class));
+  }
+
+  @Test
+  void decodingMapSelectedPreservesValidMap() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body = JsonParser.parseString("""
+            {"map":"Dizzy Highway"}
+            """).getAsJsonObject();
+
+    MapSelectedBody selection =
+            codec.decodeBody(body, MapSelectedBody.class);
+
+    assertEquals("Dizzy Highway", selection.map());
+  }
+
 }
