@@ -56,8 +56,7 @@ public class ClientHandler implements Runnable {
       System.out.println("Client group: " + clientBody.group());
 
       if (!"Version 0.1".equals(clientBody.protocol())) {
-        ErrorBody errorBody = new ErrorBody("Unsupported protocol version. Expected Version 0.1.");
-        sendMessage(CODEC.encode(new ProtocolMessage<>("Error", errorBody)));
+        sendError("Unsupported protocol version. Expected Version 0.1.");
         return;
       }
 
@@ -112,71 +111,15 @@ public class ClientHandler implements Runnable {
         try {
           incoming = CODEC.decode(message);
         } catch (IllegalArgumentException e) {
-          ErrorBody errorBody = new ErrorBody("Invalid protocol message.");
-          sendMessage(CODEC.encode(new ProtocolMessage<>("Error", errorBody)));
+          sendError("Invalid protocol message.");
           continue;
         }
 
-        if ("PlayerValues".equals(incoming.messageType())) {
-          PlayerValuesBody selection;
-
-          try {
-            selection = CODEC.decodeBody(incoming.messageBody(), PlayerValuesBody.class);
-          } catch (IllegalArgumentException e) {
-            ErrorBody error = new ErrorBody(e.getMessage());
-            sendMessage(CODEC.encode(new ProtocolMessage<>("Error", error)));
-            continue;
-          }
-          handlePlayerValues(clientId, selection);
-          continue;
+        try {
+          handleMessage(incoming);
+        } catch (IllegalArgumentException e) {
+          sendError(e.getMessage());
         }
-
-        if ("SetStatus".equals(incoming.messageType())) {
-          SetStatusBody statusBody;
-          try {
-            statusBody = CODEC.decodeBody(incoming.messageBody(), SetStatusBody.class);
-          } catch (IllegalArgumentException e) {
-
-            ErrorBody error = new ErrorBody(e.getMessage());
-            sendMessage(CODEC.encode(new ProtocolMessage<>("Error", error)));
-            continue;
-          }
-
-          handleSetStatus(clientId, statusBody);
-          continue;
-        }
-
-        if ("MapSelected".equals(incoming.messageType())) {
-          MapSelectedBody selection;
-
-          try {
-            selection = CODEC.decodeBody(incoming.messageBody(), MapSelectedBody.class);
-          } catch (IllegalArgumentException e) {
-            ErrorBody error = new ErrorBody(e.getMessage());
-            sendMessage(CODEC.encode(new ProtocolMessage<>("Error", error)));
-            continue;
-          }
-          handleMapSelected(clientId, selection);
-          continue;
-        }
-
-        if ("SendChat".equals(incoming.messageType())) {
-          SendChatBody chatBody;
-
-          try {
-
-            chatBody = CODEC.decodeBody(incoming.messageBody(), SendChatBody.class);
-          } catch (IllegalArgumentException e) {
-            ErrorBody errorBody = new ErrorBody(e.getMessage());
-            sendMessage(CODEC.encode(new ProtocolMessage<>("Error", errorBody)));
-            continue;
-          }
-          handleSendChat(clientId, chatBody);
-          continue;
-        }
-
-        ErrorBody error = new ErrorBody("Unsupported message type: " + incoming.messageType());
-        sendMessage(CODEC.encode(new ProtocolMessage<>("Error", error)));
       }
     } catch (IOException e) {
       System.err.println(
@@ -202,15 +145,43 @@ public class ClientHandler implements Runnable {
     writer.flush();
   }
 
+  private void sendError(String description) throws IOException {
+    ErrorBody errorBody = new ErrorBody(description);
+    ProtocolMessage<ErrorBody> message = new ProtocolMessage<>("Error", errorBody);
+    sendMessage(CODEC.encode(message));
+  }
+
   Integer getClientId() {
     return clientId;
+  }
+
+  private void handleMessage(ProtocolMessage<JsonObject> incoming) throws IOException {
+    switch (incoming.messageType()) {
+      case "PlayerValues" -> {
+        PlayerValuesBody selection =
+            CODEC.decodeBody(incoming.messageBody(), PlayerValuesBody.class);
+        handlePlayerValues(clientId, selection);
+      }
+      case "SetStatus" -> {
+        SetStatusBody status = CODEC.decodeBody(incoming.messageBody(), SetStatusBody.class);
+        handleSetStatus(clientId, status);
+      }
+      case "MapSelected" -> {
+        MapSelectedBody selection = CODEC.decodeBody(incoming.messageBody(), MapSelectedBody.class);
+        handleMapSelected(clientId, selection);
+      }
+      case "SendChat" -> {
+        SendChatBody chatBody = CODEC.decodeBody(incoming.messageBody(), SendChatBody.class);
+        handleSendChat(clientId, chatBody);
+      }
+      default -> sendError("Unsupported message type: " + incoming.messageType());
+    }
   }
 
   private void handlePlayerValues(int clientId, PlayerValuesBody selection) throws IOException {
 
     if (!server.trySelectFigure(clientId, selection)) {
-      ErrorBody errorBody = new ErrorBody("Figure already taken.");
-      sendMessage(CODEC.encode(new ProtocolMessage<>("Error", errorBody)));
+      sendError("Figure already taken.");
       return;
     }
 
@@ -222,8 +193,7 @@ public class ClientHandler implements Runnable {
 
     Integer previousSelectorId = server.getMapSelectorId();
     if (!server.trySetReady(clientId, status.ready())) {
-      ErrorBody errorBody = new ErrorBody("Select a figure before setting your ready status.");
-      sendMessage(CODEC.encode(new ProtocolMessage<>("Error", errorBody)));
+      sendError("Select a figure before setting your ready status.");
       return;
     }
 
@@ -239,9 +209,7 @@ public class ClientHandler implements Runnable {
   private void handleMapSelected(int clientId, MapSelectedBody selection) throws IOException {
 
     if (!server.trySelectMap(clientId, selection.map())) {
-      ErrorBody error =
-          new ErrorBody("Map selection rejected. Check your selection turn and map name.");
-      sendMessage(CODEC.encode(new ProtocolMessage<>("Error", error)));
+      sendError("Map selection rejected. Check your selection turn and map name.");
       return;
     }
 
@@ -258,9 +226,7 @@ public class ClientHandler implements Runnable {
     if (isPrivate) {
       boolean sent = server.sendToClient(chat.to(), json);
       if (!sent) {
-        ErrorBody errorBody =
-            new ErrorBody("Could not send private message to client " + chat.to() + ".");
-        sendMessage(CODEC.encode(new ProtocolMessage<>("Error", errorBody)));
+        sendError("Could not send private message to client " + chat.to() + ".");
       }
 
     } else {
