@@ -30,7 +30,6 @@ public class ChatServer {
         System.out.println("Client connected: " + clientSocket.getRemoteSocketAddress());
 
         var handler = new ClientHandler(clientSocket, this);
-        activeClients.add(handler);
         new Thread(handler).start();
       }
     }
@@ -178,5 +177,9 @@ public class ChatServer {
 
   synchronized String getSelectedMap() {
     return selectedMap;
+  }
+
+  void registerClient(ClientHandler handler) {
+    activeClients.addIfAbsent(handler);
   }
 }

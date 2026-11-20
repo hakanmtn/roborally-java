@@ -80,6 +80,7 @@ public class ClientHandler implements Runnable {
       WelcomeBody welcomeBody = new WelcomeBody(clientId);
       ProtocolMessage<WelcomeBody> welcome = new ProtocolMessage<>("Welcome", welcomeBody);
       sendMessage(CODEC.encode(welcome));
+      server.registerClient(this);
 
       for (PlayerAddedBody player : server.getSelectedPlayers()) {
         ProtocolMessage<PlayerAddedBody> message = new ProtocolMessage<>("PlayerAdded", player);
