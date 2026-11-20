@@ -122,13 +122,40 @@ public class JsonMessageCodec {
       }
     }
 
-    if(bodyType == MapSelectedBody.class) {
+    if (bodyType == MapSelectedBody.class) {
       JsonElement map = body.get("map");
       if (map == null || map.isJsonNull()) {
         throw new IllegalArgumentException("Map name is required");
       }
       if (!map.isJsonPrimitive() || !map.getAsJsonPrimitive().isString()) {
         throw new IllegalArgumentException("Map name must be a JSON string");
+      }
+    }
+
+    if (bodyType == HelloServerBody.class) {
+      JsonElement protocol = body.get("protocol");
+
+      if (protocol == null || protocol.isJsonNull()) {
+        throw new IllegalArgumentException("Client protocol is required");
+      }
+      if (!protocol.isJsonPrimitive() || !protocol.getAsJsonPrimitive().isString()) {
+        throw new IllegalArgumentException("Client protocol must be a JSON string");
+      }
+
+      JsonElement isAI = body.get("isAI");
+      if (isAI == null || isAI.isJsonNull()) {
+        throw new IllegalArgumentException("Client isAI is required");
+      }
+      if (!isAI.isJsonPrimitive() || !isAI.getAsJsonPrimitive().isBoolean()) {
+        throw new IllegalArgumentException("Client isAI must be a boolean");
+      }
+
+      JsonElement group = body.get("group");
+      if (group == null || group.isJsonNull()) {
+        throw new IllegalArgumentException("Client group is required");
+      }
+      if (!group.isJsonPrimitive() || !group.getAsJsonPrimitive().isString()) {
+        throw new IllegalArgumentException("Client group must be a JSON string");
       }
     }
 

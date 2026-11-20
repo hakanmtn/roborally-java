@@ -649,51 +649,58 @@ class JsonMessageCodecTest {
   void decodingPlayerValuesWithNumericNameThrowsException() {
     JsonMessageCodec codec = new JsonMessageCodec();
 
-    JsonObject body = JsonParser.parseString("""
+    JsonObject body =
+        JsonParser.parseString(
+                """
             {"name":42,"figure":5}
-            """).getAsJsonObject();
+            """)
+            .getAsJsonObject();
 
     assertThrows(
-            IllegalArgumentException.class,
-            () -> codec.decodeBody(body, PlayerValuesBody.class));
+        IllegalArgumentException.class, () -> codec.decodeBody(body, PlayerValuesBody.class));
   }
 
   @Test
   void decodingPlayerValuesWithoutFigureThrowsException() {
     JsonMessageCodec codec = new JsonMessageCodec();
 
-    JsonObject body = JsonParser.parseString("""
+    JsonObject body =
+        JsonParser.parseString(
+                """
             {"name":"Alex"}
-            """).getAsJsonObject();
+            """)
+            .getAsJsonObject();
 
     assertThrows(
-            IllegalArgumentException.class,
-            () -> codec.decodeBody(body, PlayerValuesBody.class));
+        IllegalArgumentException.class, () -> codec.decodeBody(body, PlayerValuesBody.class));
   }
 
   @Test
-  void decodingPlayerValuesWithFractionalFigureThrowsException(){
+  void decodingPlayerValuesWithFractionalFigureThrowsException() {
     JsonMessageCodec codec = new JsonMessageCodec();
-    JsonObject body = JsonParser.parseString("""
+    JsonObject body =
+        JsonParser.parseString(
+                """
         {"name":"Alex","figure":2.5}
-        """).getAsJsonObject();
+        """)
+            .getAsJsonObject();
 
     assertThrows(
-        IllegalArgumentException.class,
-        () -> codec.decodeBody(body, PlayerValuesBody.class));
-
+        IllegalArgumentException.class, () -> codec.decodeBody(body, PlayerValuesBody.class));
   }
 
   @Test
   void decodingPlayerValuesPreservesValidSelection() {
     JsonMessageCodec codec = new JsonMessageCodec();
 
-    JsonObject body = JsonParser.parseString("""
+    JsonObject body =
+        JsonParser.parseString(
+                """
             {"name":"Alex","figure":5}
-            """).getAsJsonObject();
+            """)
+            .getAsJsonObject();
 
-    PlayerValuesBody selection =
-            codec.decodeBody(body, PlayerValuesBody.class);
+    PlayerValuesBody selection = codec.decodeBody(body, PlayerValuesBody.class);
 
     assertEquals("Alex", selection.name());
     assertEquals(5, selection.figure());
@@ -705,35 +712,145 @@ class JsonMessageCodecTest {
     JsonObject body = new JsonObject();
 
     assertThrows(
-            IllegalArgumentException.class,
-            () -> codec.decodeBody(body, MapSelectedBody.class));
+        IllegalArgumentException.class, () -> codec.decodeBody(body, MapSelectedBody.class));
   }
 
   @Test
   void decodingMapSelectedWithNumericMapThrowsException() {
     JsonMessageCodec codec = new JsonMessageCodec();
 
-    JsonObject body = JsonParser.parseString("""
+    JsonObject body =
+        JsonParser.parseString(
+                """
             {"map":42}
-            """).getAsJsonObject();
+            """)
+            .getAsJsonObject();
 
     assertThrows(
-            IllegalArgumentException.class,
-            () -> codec.decodeBody(body, MapSelectedBody.class));
+        IllegalArgumentException.class, () -> codec.decodeBody(body, MapSelectedBody.class));
   }
 
   @Test
   void decodingMapSelectedPreservesValidMap() {
     JsonMessageCodec codec = new JsonMessageCodec();
 
-    JsonObject body = JsonParser.parseString("""
+    JsonObject body =
+        JsonParser.parseString(
+                """
             {"map":"Dizzy Highway"}
-            """).getAsJsonObject();
+            """)
+            .getAsJsonObject();
 
-    MapSelectedBody selection =
-            codec.decodeBody(body, MapSelectedBody.class);
+    MapSelectedBody selection = codec.decodeBody(body, MapSelectedBody.class);
 
     assertEquals("Dizzy Highway", selection.map());
   }
 
+  @Test
+  void decodingHelloServerWithoutProtocolThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+    JsonObject body =
+        JsonParser.parseString(
+                """
+        {
+          "group": "RoboRally",
+          "isAI": false
+        }
+        """)
+            .getAsJsonObject();
+
+    assertThrows(
+        IllegalArgumentException.class, () -> codec.decodeBody(body, HelloServerBody.class));
+  }
+
+  @Test
+  void decodingHelloServerWithNumericProtocolThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body =
+        JsonParser.parseString(
+                """
+        {
+          "group": "RoboRally",
+          "isAI": false,
+          "protocol": 123
+        }
+        """)
+            .getAsJsonObject();
+
+    assertThrows(
+        IllegalArgumentException.class, () -> codec.decodeBody(body, HelloServerBody.class));
+  }
+
+  @Test
+  void decodingHelloServerWithoutIsAIThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body =
+        JsonParser.parseString(
+                """
+        {
+          "group": "RoboRally",
+          "protocol": "Version 0.1"
+        }
+        """)
+            .getAsJsonObject();
+
+    assertThrows(
+        IllegalArgumentException.class, () -> codec.decodeBody(body, HelloServerBody.class));
+  }
+
+  @Test
+  void decodingHelloServerWithStringIsAIThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body =
+        JsonParser.parseString(
+                """
+        {
+          "group": "RoboRally",
+          "isAI": "false",
+          "protocol": "Version 0.1"
+        }
+        """)
+            .getAsJsonObject();
+
+    assertThrows(
+        IllegalArgumentException.class, () -> codec.decodeBody(body, HelloServerBody.class));
+  }
+
+  @Test
+  void decodingHelloServerWithoutGroupThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body =
+        JsonParser.parseString(
+                """
+        {
+          "isAI": false,
+          "protocol": "Version 0.1"
+        }
+        """)
+            .getAsJsonObject();
+
+    assertThrows(
+        IllegalArgumentException.class, () -> codec.decodeBody(body, HelloServerBody.class));
+  }
+
+  @Test
+  void decodingHelloServerWithNumericGroupThrowsException() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    JsonObject body = JsonParser.parseString("""
+        {
+          "group": 42,
+          "isAI": false,
+          "protocol": "Version 0.1"
+        }
+        """).getAsJsonObject();
+
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> codec.decodeBody(body, HelloServerBody.class));
+  }
 }

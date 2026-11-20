@@ -45,14 +45,30 @@ public class ClientHandler implements Runnable {
         return;
       }
 
-      ProtocolMessage<JsonObject> reply = CODEC.decode(firstLine);
+      ProtocolMessage<JsonObject> reply;
 
-      if (!"HelloServer".equals(reply.messageType())) {
-        System.err.println("Expected HelloServer, received: " + reply.messageType());
+      try{
+        reply = CODEC.decode(firstLine);
+      }catch(IllegalArgumentException e){
+        sendError("Invalid protocol message.");
         return;
       }
 
-      HelloServerBody clientBody = CODEC.decodeBody(reply.messageBody(), HelloServerBody.class);
+
+      if (!"HelloServer".equals(reply.messageType())) {
+        sendError("Expected HelloServer, received: " + reply.messageType());
+        return;
+      }
+
+      HelloServerBody clientBody;
+
+      try {
+        clientBody =
+                CODEC.decodeBody(reply.messageBody(), HelloServerBody.class);
+      } catch (IllegalArgumentException e) {
+        sendError(e.getMessage());
+        return;
+      }
       System.out.println("Client group: " + clientBody.group());
 
       if (!"Version 0.1".equals(clientBody.protocol())) {
