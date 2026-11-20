@@ -16,6 +16,7 @@ public class ChatServer {
   private final Set<Integer> readyPlayerOrder = new LinkedHashSet<>();
   private String selectedMap;
   private final List<String> availableMaps = List.of("Dizzy Highway");
+  private boolean gameStarted;
 
   public static void main(String[] args) throws IOException {
     new ChatServer().start();
@@ -181,5 +182,28 @@ public class ChatServer {
 
   void registerClient(ClientHandler handler) {
     activeClients.addIfAbsent(handler);
+  }
+
+  synchronized boolean canStartGame() {
+
+    if (playerSelections.size() < 2 || selectedMap == null) {
+      return false;
+    }
+
+    for (int clientId : playerSelections.keySet()) {
+      if (!isPlayerReady(clientId)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  synchronized boolean tryStartGame() {
+    if(gameStarted || !canStartGame()) {
+      return false;
+    }
+    gameStarted = true;
+    return true;
   }
 }

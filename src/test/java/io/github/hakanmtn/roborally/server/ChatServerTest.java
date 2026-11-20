@@ -288,4 +288,110 @@ class ChatServerTest {
 
     assertFalse(chatServer.sendToClient(42, "Hello"));
   }
+
+  @Test
+  void gameCannotStartWithoutPlayers() {
+    ChatServer server = new ChatServer();
+
+    assertFalse(server.canStartGame());
+  }
+
+  @Test
+  void gameCanStartWhenTwoPlayersAreReadyAndMapIsSelected() {
+    ChatServer chatServer = new ChatServer();
+    int alexId = chatServer.assignClientId();
+    int samId = chatServer.assignClientId();
+
+    assertTrue(chatServer.trySelectFigure(alexId, new PlayerValuesBody("Alex", 5)));
+    assertTrue(chatServer.trySelectFigure(samId, new PlayerValuesBody("Sam", 2)));
+
+    assertTrue(chatServer.trySetReady(alexId, true));
+    assertTrue(chatServer.trySetReady(samId, true));
+    assertTrue(chatServer.trySelectMap(alexId, "Dizzy Highway"));
+
+    assertTrue(chatServer.canStartGame());
+  }
+
+  @Test
+  void gameCannotStartWhenOneOfFivePlayersIsNotReady() {
+    ChatServer server = new ChatServer();
+
+    int firstId = server.assignClientId();
+    assertTrue(server.trySelectFigure(firstId, new PlayerValuesBody("Alex", 1)));
+    assertTrue(server.trySetReady(firstId, true));
+    assertTrue(server.trySelectMap(firstId, "Dizzy Highway"));
+
+    for (int figure = 2; figure <= 5; figure++) {
+      int clientId = server.assignClientId();
+      assertTrue(server.trySelectFigure(clientId, new PlayerValuesBody("Player" + figure, figure)));
+
+      if (figure < 5) {
+        assertTrue(server.trySetReady(clientId, true));
+      }
+    }
+
+    assertFalse(server.canStartGame());
+  }
+
+  @Test
+  void gameCannotStartWithOnlyOneReadyPlayer() {
+    ChatServer chatServer = new ChatServer();
+    int alexId = chatServer.assignClientId();
+
+    assertTrue(chatServer.trySelectFigure(alexId, new PlayerValuesBody("Alex", 1)));
+    assertTrue(chatServer.trySetReady(alexId, true));
+    assertTrue(chatServer.trySelectMap(alexId, "Dizzy Highway"));
+
+    assertFalse(chatServer.canStartGame());
+  }
+
+  @Test
+  void gameCannotStartBeforeMapIsSelected() {
+    ChatServer chatServer = new ChatServer();
+    int alexId = chatServer.assignClientId();
+    int samId = chatServer.assignClientId();
+
+    assertTrue(chatServer.trySelectFigure(alexId, new PlayerValuesBody("Alex", 5)));
+    assertTrue(chatServer.trySelectFigure(samId, new PlayerValuesBody("Sam", 2)));
+    assertTrue(chatServer.trySetReady(alexId, true));
+    assertTrue(chatServer.trySetReady(samId, true));
+
+    assertFalse(chatServer.canStartGame());
+  }
+
+  @Test
+  void gameCannotStartTwice() {
+    ChatServer server = new ChatServer();
+    int alexId = server.assignClientId();
+    int samId = server.assignClientId();
+
+    assertTrue(server.trySelectFigure(alexId, new PlayerValuesBody("Alex", 5)));
+    assertTrue(server.trySelectFigure(samId, new PlayerValuesBody("Sam", 2)));
+
+    assertTrue(server.trySetReady(alexId, true));
+    assertTrue(server.trySetReady(samId, true));
+    assertTrue(server.trySelectMap(alexId, "Dizzy Highway"));
+
+    assertTrue(server.tryStartGame());
+    assertFalse(server.tryStartGame());
+  }
+
+  @Test
+  void gameCanStartAfterAnEarlierRejectedAttempt() {
+    ChatServer chatServer = new ChatServer();
+
+    assertFalse(chatServer.tryStartGame());
+
+    int alexId = chatServer.assignClientId();
+    int samId = chatServer.assignClientId();
+
+    assertTrue(chatServer.trySelectFigure(alexId, new PlayerValuesBody("Alex", 5)));
+    assertTrue(chatServer.trySelectFigure(samId, new PlayerValuesBody("Sam", 2)));
+
+    assertTrue(chatServer.trySetReady(alexId, true));
+    assertTrue(chatServer.trySetReady(samId, true));
+    assertTrue(chatServer.trySelectMap(alexId, "Dizzy Highway"));
+
+    assertTrue(chatServer.tryStartGame());
+  }
 }

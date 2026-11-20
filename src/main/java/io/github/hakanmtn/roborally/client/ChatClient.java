@@ -134,7 +134,9 @@ public class ChatClient {
   }
 
   static void sendMessage(OutputStreamWriter writer, String message) throws IOException {
-    writer.write(message + "\n");
-    writer.flush();
+    synchronized (writer) {
+      writer.write(message + "\n");
+      writer.flush();
+    }
   }
 }
