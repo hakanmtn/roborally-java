@@ -75,10 +75,11 @@ public class BoardMapper {
         json.addProperty("type", "Gear");
         json.addProperty("isOnBoard", cell.getBoardName());
 
-        String rotation = switch (gear.getRotationDirection()){
-            case CLOCKWISE -> "clockwise";
-            case COUNTERCLOCKWISE -> "counterclockwise";
-        };
+        String rotation =
+            switch (gear.getRotationDirection()) {
+              case CLOCKWISE -> "clockwise";
+              case COUNTERCLOCKWISE -> "counterclockwise";
+            };
 
         JsonArray orientations = new JsonArray();
         orientations.add(rotation);
@@ -86,7 +87,7 @@ public class BoardMapper {
 
         elements.add(json);
 
-      } else if(element instanceof Antenna antenna) {
+      } else if (element instanceof Antenna antenna) {
         JsonObject json = new JsonObject();
         json.addProperty("type", "Antenna");
         json.addProperty("isOnBoard", cell.getBoardName());
@@ -97,13 +98,54 @@ public class BoardMapper {
 
         elements.add(json);
 
-      } else if(element instanceof Pit pit) {
+      } else if (element instanceof Pit pit) {
         JsonObject json = new JsonObject();
         json.addProperty("type", "Pit");
         json.addProperty("isOnBoard", cell.getBoardName());
 
         elements.add(json);
-      } else {
+      } else if (element instanceof EnergySpace energySpace) {
+        JsonObject json = new JsonObject();
+        json.addProperty("type", "EnergySpace");
+        json.addProperty("isOnBoard", cell.getBoardName());
+        json.addProperty("count", energySpace.getCount());
+
+        elements.add(json);
+
+      } else if (element instanceof PushPanel pushPanel) {
+        JsonObject json = new JsonObject();
+        json.addProperty("type", "PushPanel");
+        json.addProperty("isOnBoard", cell.getBoardName());
+
+        JsonArray orientations = new JsonArray();
+        orientations.add(mapDirection(pushPanel.getDirection()));
+        json.add("orientations", orientations);
+
+        JsonArray registers = new JsonArray();
+
+        for (int register : pushPanel.getActiveRegisters()) {
+          registers.add(register);
+        }
+
+        json.add("registers", registers);
+        elements.add(json);
+
+      } else if(element instanceof ConveyorBelt conveyorBelt){
+        JsonObject json = new JsonObject();
+        json.addProperty("type", "ConveyorBelt");
+        json.addProperty("isOnBoard", cell.getBoardName());
+        json.addProperty("speed", conveyorBelt.getSpeed());
+
+        JsonArray orientations = new JsonArray();
+        orientations.add(mapDirection(conveyorBelt.getExitDirection()));
+
+        for(Direction direction : conveyorBelt.getEntryDirections())  {
+          orientations.add(mapDirection(direction));
+        }
+
+        json.add("orientations", orientations);
+        elements.add(json);
+      }  else {
         throw new IllegalArgumentException(
             "Unsupported board element: " + element.getClass().getSimpleName());
       }

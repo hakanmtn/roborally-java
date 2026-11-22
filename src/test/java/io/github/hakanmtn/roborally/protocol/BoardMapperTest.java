@@ -208,4 +208,67 @@ class BoardMapperTest {
     assertEquals("4A", pit.get("isOnBoard").getAsString());
     assertFalse(pit.has("orientations"));
   }
+
+  @Test
+  void mapsEnergySpaceWithBoardNameAndCount(){
+    Cell cell = new Cell(new Position(2, 3), "4A");
+    cell.addElement(new EnergySpace(1));
+
+    JsonArray elements = new BoardMapper().mapCell(cell);
+    assertEquals(1, elements.size());
+
+    JsonObject energy = elements.get(0).getAsJsonObject();
+    assertEquals("EnergySpace", energy.get("type").getAsString());
+    assertEquals("4A", energy.get("isOnBoard").getAsString());
+
+    JsonPrimitive count = energy.get("count").getAsJsonPrimitive();
+    assertTrue(count.isNumber());
+    assertEquals(1, count.getAsInt());
+
+    assertFalse(energy.has("orientations"));
+  }
+
+  @Test
+  void mapsPushPanelWithDirectionAndActiveRegisters(){
+    Cell cell = new Cell(new Position(2, 3), "4A");
+    cell.addElement(new PushPanel(Direction.WEST, Set.of(2,4)));
+
+    JsonArray elements = new BoardMapper().mapCell(cell);
+    assertEquals(1, elements.size());
+
+    JsonObject pushPanel = elements.get(0).getAsJsonObject();
+    assertEquals("PushPanel", pushPanel.get("type").getAsString());
+    assertEquals("4A", pushPanel.get("isOnBoard").getAsString());
+
+    JsonArray orientations = pushPanel.getAsJsonArray("orientations");
+    assertEquals(1, orientations.size());
+    assertEquals("left", orientations.get(0).getAsString());
+
+    JsonArray registers = pushPanel.getAsJsonArray("registers");
+    assertEquals(2, registers.size());
+    assertTrue(registers.contains(new JsonPrimitive(2)));
+    assertTrue(registers.contains(new JsonPrimitive(4)));
+  }
+
+  @Test
+  void mapsConveyorBeltWithExitDirectionFirst(){
+    Cell cell = new Cell(new Position(2, 3), "4A");
+    cell.addElement(new ConveyorBelt(2,Direction.NORTH , Set.of(Direction.SOUTH,Direction.EAST)));
+
+    JsonArray elements = new BoardMapper().mapCell(cell);
+    assertEquals(1, elements.size());
+
+    JsonObject conveyorBelt = elements.get(0).getAsJsonObject();
+    assertEquals("ConveyorBelt", conveyorBelt.get("type").getAsString());
+    assertEquals("4A", conveyorBelt.get("isOnBoard").getAsString());
+    assertEquals(2, conveyorBelt.get("speed").getAsInt());
+
+    JsonArray orientations = conveyorBelt.getAsJsonArray("orientations");
+    assertEquals(3, orientations.size());
+    assertEquals("top", orientations.get(0).getAsString());
+    assertTrue(orientations.contains(new JsonPrimitive("bottom")));
+    assertTrue(orientations.contains(new JsonPrimitive("right")));
+  }
+
+
 }
