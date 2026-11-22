@@ -1,5 +1,7 @@
 package io.github.hakanmtn.roborally.client;
 
+import com.google.gson.JsonObject;
+import io.github.hakanmtn.roborally.protocol.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -19,12 +21,79 @@ public class ChatClient {
           new BufferedReader(
               new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
 
+      String firstLine = reader.readLine();
+      if (firstLine == null) {
+        System.out.println("Server disconnected before sending HelloClient.");
+        return;
+      }
+
+      JsonMessageCodec codec = new JsonMessageCodec();
+      ProtocolMessage<JsonObject> greeting = codec.decode(firstLine);
+
+      if (!"HelloClient".equals(greeting.messageType())) {
+        System.err.println("Expected HelloClient, received" + greeting.messageType());
+        return;
+      }
+
+      HelloClientBody body = codec.decodeBody(greeting.messageBody(), HelloClientBody.class);
+      System.out.println("Server protocol: " + body.protocol());
+
+      HelloServerBody clientBody = new HelloServerBody("RoboRally", false, "Version 0.1");
+      ProtocolMessage<HelloServerBody> reply = new ProtocolMessage<>("HelloServer", clientBody);
+      sendMessage(writer, codec.encode(reply));
+
+      String responseLine = reader.readLine();
+      if (responseLine == null) {
+        System.out.println("Server disconnected during handshake.");
+        return;
+      }
+
+      ProtocolMessage<JsonObject> response = codec.decode(responseLine);
+
+      if ("Error".equals(response.messageType())) {
+        ErrorBody error = codec.decodeBody(response.messageBody(), ErrorBody.class);
+        System.err.println("Server error: " + error.error());
+        return;
+      }
+
+      if (!"Welcome".equals(response.messageType())) {
+        System.err.println("Expected Welcome, received" + response.messageType());
+        return;
+      }
+
+      WelcomeBody welcomeBody = codec.decodeBody(response.messageBody(), WelcomeBody.class);
+      System.out.println("My client ID: " + welcomeBody.clientID());
+
       Thread listenerThread =
           new Thread(
               () -> {
                 try {
+
                   String message;
                   while ((message = reader.readLine()) != null) {
+
+                    if (codec.isAliveMessage(message)) {
+                      sendMessage(writer, message);
+                      continue;
+                    }
+
+                    ProtocolMessage<JsonObject> incoming = codec.decode(message);
+
+                    if ("ReceivedChat".equals(incoming.messageType())) {
+                      ReceivedChatBody chat =
+                          codec.decodeBody(incoming.messageBody(), ReceivedChatBody.class);
+
+                      String prefix = chat.isPrivate() ? "[Private] " : "";
+                      System.out.println(prefix + "Client " + chat.from() + ": " + chat.message());
+                      continue;
+                    }
+
+                    if ("Error".equals(incoming.messageType())) {
+                      ErrorBody error = codec.decodeBody(incoming.messageBody(), ErrorBody.class);
+                      System.err.println("Server error: " + error.error());
+                      continue;
+                    }
+
                     System.out.println("Server: " + message);
                   }
                 } catch (IOException e) {
@@ -39,7 +108,8 @@ public class ChatClient {
       BufferedReader console =
           new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
 
-      System.out.println("Enter a message, or /quit to disconnect.");
+      System.out.println(
+          "Enter a message, /raw <json> to send a protocol message, or /quit to disconnect.");
 
       String message;
       while ((message = console.readLine()) != null) {
@@ -47,13 +117,26 @@ public class ChatClient {
           break;
         }
 
-        sendMessage(writer, message);
+        if (message.isEmpty()) {
+          continue;
+        }
+
+        if (message.startsWith("/raw ")) {
+          sendMessage(writer, message.substring(5));
+          continue;
+        }
+
+        SendChatBody sendChatBody = new SendChatBody(message, -1);
+        ProtocolMessage<SendChatBody> chat = new ProtocolMessage<>("SendChat", sendChatBody);
+        sendMessage(writer, codec.encode(chat));
       }
     }
   }
 
   static void sendMessage(OutputStreamWriter writer, String message) throws IOException {
-    writer.write(message + "\n");
-    writer.flush();
+    synchronized (writer) {
+      writer.write(message + "\n");
+      writer.flush();
+    }
   }
 }

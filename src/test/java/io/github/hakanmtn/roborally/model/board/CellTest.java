@@ -84,4 +84,11 @@ class CellTest {
 
     assertThrows(UnsupportedOperationException.class, () -> cell.getElements().add(element));
   }
+
+  @Test
+  void cellStoresBoardName() {
+    Cell cell = new Cell(new Position(2, 3), "4A");
+
+    assertEquals("4A", cell.getBoardName());
+  }
 }
