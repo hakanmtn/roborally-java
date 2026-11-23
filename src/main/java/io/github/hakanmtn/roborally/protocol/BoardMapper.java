@@ -1,8 +1,11 @@
 package io.github.hakanmtn.roborally.protocol;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import io.github.hakanmtn.roborally.model.Direction;
+import io.github.hakanmtn.roborally.model.Position;
+import io.github.hakanmtn.roborally.model.board.Board;
 import io.github.hakanmtn.roborally.model.board.Cell;
 import io.github.hakanmtn.roborally.model.board.element.*;
 
@@ -130,7 +133,7 @@ public class BoardMapper {
         json.add("registers", registers);
         elements.add(json);
 
-      } else if(element instanceof ConveyorBelt conveyorBelt){
+      } else if (element instanceof ConveyorBelt conveyorBelt) {
         JsonObject json = new JsonObject();
         json.addProperty("type", "ConveyorBelt");
         json.addProperty("isOnBoard", cell.getBoardName());
@@ -139,13 +142,13 @@ public class BoardMapper {
         JsonArray orientations = new JsonArray();
         orientations.add(mapDirection(conveyorBelt.getExitDirection()));
 
-        for(Direction direction : conveyorBelt.getEntryDirections())  {
+        for (Direction direction : conveyorBelt.getEntryDirections()) {
           orientations.add(mapDirection(direction));
         }
 
         json.add("orientations", orientations);
         elements.add(json);
-      }  else {
+      } else {
         throw new IllegalArgumentException(
             "Unsupported board element: " + element.getClass().getSimpleName());
       }
@@ -162,5 +165,28 @@ public class BoardMapper {
       case SOUTH -> "bottom";
       case WEST -> "left";
     };
+  }
+
+  public JsonArray mapBoard(Board board, int width, int height) {
+    JsonArray gameMap = new JsonArray();
+
+    for (int x = 0; x < width; x++) {
+      JsonArray column = new JsonArray();
+
+      for (int y = 0; y < height; y++) {
+        Cell cell = board.getCell(new Position(x, y));
+
+        if (cell == null) {
+          JsonArray missingCell = new JsonArray();
+          missingCell.add(JsonNull.INSTANCE);
+          column.add(missingCell);
+        } else {
+          column.add(mapCell(cell));
+        }
+      }
+      gameMap.add(column);
+    }
+
+    return gameMap;
   }
 }

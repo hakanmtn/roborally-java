@@ -6,6 +6,7 @@ import com.google.gson.JsonPrimitive;
 import io.github.hakanmtn.roborally.model.Direction;
 import io.github.hakanmtn.roborally.model.Position;
 import io.github.hakanmtn.roborally.model.RotationDirection;
+import io.github.hakanmtn.roborally.model.board.Board;
 import io.github.hakanmtn.roborally.model.board.Cell;
 import io.github.hakanmtn.roborally.model.board.element.*;
 
@@ -270,5 +271,70 @@ class BoardMapperTest {
     assertTrue(orientations.contains(new JsonPrimitive("right")));
   }
 
+  @Test
+  void mapsSingleCellBoardIntoCoordinateArrays(){
+    Board board = new Board();
+    Cell cell = new Cell(new Position(0, 0), "4A");
+    cell.addElement(new StartPoint());
+    board.addCell(cell);
 
+    JsonArray gameMap = new BoardMapper().mapBoard(board, 1,1);
+
+    assertEquals(1, gameMap.size());
+
+    JsonArray column = gameMap.get(0).getAsJsonArray();
+    assertEquals(1, column.size());
+
+    JsonArray elements = column.get(0).getAsJsonArray();
+    assertEquals(1, elements.size());
+
+    JsonObject startPoint = elements.get(0).getAsJsonObject();
+    assertEquals("StartPoint", startPoint.get("type").getAsString());
+    assertEquals("4A", startPoint.get("isOnBoard").getAsString());
+  }
+  @Test
+  void mapsMissingCellAsNullElement(){
+    Board board = new Board();
+
+    JsonArray gameMap = new BoardMapper().mapBoard(board, 1,1);
+
+    assertEquals(1, gameMap.size());
+
+    JsonArray column = gameMap.get(0).getAsJsonArray();
+    assertEquals(1, column.size());
+
+    JsonArray elements = column.get(0).getAsJsonArray();
+    assertEquals(1, elements.size());
+    assertTrue(elements.get(0).isJsonNull());
+  }
+
+  @Test
+  void mapsCellsByCoordinatesRegardlessOfInsertionOrder(){
+    Board board = new Board();
+
+    Cell pitCell = new Cell(new Position(1, 0), "4A");
+    pitCell.addElement(new Pit());
+    board.addCell(pitCell);
+
+    Cell startCell = new Cell(new Position(0, 0), "4A");
+    startCell.addElement(new StartPoint());
+    board.addCell(startCell);
+
+    JsonArray gameMap = new BoardMapper().mapBoard(board, 2, 1);
+
+    assertEquals(2, gameMap.size());
+
+    JsonArray firstColumn = gameMap.get(0).getAsJsonArray();
+    JsonArray secondColumn = gameMap.get(1).getAsJsonArray();
+
+    assertEquals(1, firstColumn.size());
+    assertEquals(1, secondColumn.size());
+
+    JsonObject startPoint = firstColumn.get(0).getAsJsonArray().get(0).getAsJsonObject();
+
+    JsonObject pit = secondColumn.get(0).getAsJsonArray().get(0).getAsJsonObject();
+
+    assertEquals("StartPoint", startPoint.get("type").getAsString());
+    assertEquals("Pit", pit.get("type").getAsString());
+  }
 }
