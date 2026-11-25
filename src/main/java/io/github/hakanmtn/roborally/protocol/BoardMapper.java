@@ -168,6 +168,10 @@ public class BoardMapper {
   }
 
   public JsonArray mapBoard(Board board, int width, int height) {
+
+    if (width <= 0 || height <= 0){
+      throw new IllegalArgumentException("Board width and height must be positive");
+    }
     JsonArray gameMap = new JsonArray();
 
     for (int x = 0; x < width; x++) {

@@ -1,5 +1,7 @@
 package io.github.hakanmtn.roborally.protocol;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
@@ -9,11 +11,8 @@ import io.github.hakanmtn.roborally.model.RotationDirection;
 import io.github.hakanmtn.roborally.model.board.Board;
 import io.github.hakanmtn.roborally.model.board.Cell;
 import io.github.hakanmtn.roborally.model.board.element.*;
-
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class BoardMapperTest {
 
@@ -148,6 +147,7 @@ class BoardMapperTest {
     assertEquals(2, checkpoint.get("count").getAsInt());
     assertFalse(checkpoint.has("orientations"));
   }
+
   @Test
   void mapsClockwiseGearWithBoardNameAndRotation() {
     Cell cell = new Cell(new Position(2, 3), "4A");
@@ -165,8 +165,9 @@ class BoardMapperTest {
     assertEquals(1, orientations.size());
     assertEquals("clockwise", orientations.get(0).getAsString());
   }
+
   @Test
-  void mapsCounterclockwiseGearRotation(){
+  void mapsCounterclockwiseGearRotation() {
     Cell cell = new Cell(new Position(2, 3), "4A");
     cell.addElement(new Gear(RotationDirection.COUNTERCLOCKWISE));
 
@@ -179,7 +180,7 @@ class BoardMapperTest {
   }
 
   @Test
-  void mapsAntennaWithBoardNameAndFacing(){
+  void mapsAntennaWithBoardNameAndFacing() {
     Cell cell = new Cell(new Position(2, 3), "4A");
     cell.addElement(new Antenna(Direction.WEST));
 
@@ -194,11 +195,10 @@ class BoardMapperTest {
     JsonArray orientations = antenna.getAsJsonArray("orientations");
     assertEquals(1, orientations.size());
     assertEquals("left", orientations.get(0).getAsString());
-
   }
 
   @Test
-  void mapsPitWithBoardName(){
+  void mapsPitWithBoardName() {
     Cell cell = new Cell(new Position(2, 3), "4A");
     cell.addElement(new Pit());
 
@@ -211,7 +211,7 @@ class BoardMapperTest {
   }
 
   @Test
-  void mapsEnergySpaceWithBoardNameAndCount(){
+  void mapsEnergySpaceWithBoardNameAndCount() {
     Cell cell = new Cell(new Position(2, 3), "4A");
     cell.addElement(new EnergySpace(1));
 
@@ -230,9 +230,9 @@ class BoardMapperTest {
   }
 
   @Test
-  void mapsPushPanelWithDirectionAndActiveRegisters(){
+  void mapsPushPanelWithDirectionAndActiveRegisters() {
     Cell cell = new Cell(new Position(2, 3), "4A");
-    cell.addElement(new PushPanel(Direction.WEST, Set.of(2,4)));
+    cell.addElement(new PushPanel(Direction.WEST, Set.of(2, 4)));
 
     JsonArray elements = new BoardMapper().mapCell(cell);
     assertEquals(1, elements.size());
@@ -252,9 +252,9 @@ class BoardMapperTest {
   }
 
   @Test
-  void mapsConveyorBeltWithExitDirectionFirst(){
+  void mapsConveyorBeltWithExitDirectionFirst() {
     Cell cell = new Cell(new Position(2, 3), "4A");
-    cell.addElement(new ConveyorBelt(2,Direction.NORTH , Set.of(Direction.SOUTH,Direction.EAST)));
+    cell.addElement(new ConveyorBelt(2, Direction.NORTH, Set.of(Direction.SOUTH, Direction.EAST)));
 
     JsonArray elements = new BoardMapper().mapCell(cell);
     assertEquals(1, elements.size());
@@ -272,13 +272,13 @@ class BoardMapperTest {
   }
 
   @Test
-  void mapsSingleCellBoardIntoCoordinateArrays(){
+  void mapsSingleCellBoardIntoCoordinateArrays() {
     Board board = new Board();
     Cell cell = new Cell(new Position(0, 0), "4A");
     cell.addElement(new StartPoint());
     board.addCell(cell);
 
-    JsonArray gameMap = new BoardMapper().mapBoard(board, 1,1);
+    JsonArray gameMap = new BoardMapper().mapBoard(board, 1, 1);
 
     assertEquals(1, gameMap.size());
 
@@ -292,11 +292,12 @@ class BoardMapperTest {
     assertEquals("StartPoint", startPoint.get("type").getAsString());
     assertEquals("4A", startPoint.get("isOnBoard").getAsString());
   }
+
   @Test
-  void mapsMissingCellAsNullElement(){
+  void mapsMissingCellAsNullElement() {
     Board board = new Board();
 
-    JsonArray gameMap = new BoardMapper().mapBoard(board, 1,1);
+    JsonArray gameMap = new BoardMapper().mapBoard(board, 1, 1);
 
     assertEquals(1, gameMap.size());
 
@@ -309,7 +310,7 @@ class BoardMapperTest {
   }
 
   @Test
-  void mapsCellsByCoordinatesRegardlessOfInsertionOrder(){
+  void mapsCellsByCoordinatesRegardlessOfInsertionOrder() {
     Board board = new Board();
 
     Cell pitCell = new Cell(new Position(1, 0), "4A");
@@ -336,5 +337,46 @@ class BoardMapperTest {
 
     assertEquals("StartPoint", startPoint.get("type").getAsString());
     assertEquals("Pit", pit.get("type").getAsString());
+  }
+
+  @Test
+  void mapsCellsIntoRowsWithinSameColumn() {
+    Board board = new Board();
+
+    Cell startCell = new Cell(new Position(0, 0), "4A");
+    startCell.addElement(new StartPoint());
+    board.addCell(startCell);
+
+    Cell pitCell = new Cell(new Position(0, 1), "4A");
+    pitCell.addElement(new Pit());
+    board.addCell(pitCell);
+
+    JsonArray gameMap = new BoardMapper().mapBoard(board, 1, 2);
+
+    assertEquals(1, gameMap.size());
+
+    JsonArray column = gameMap.get(0).getAsJsonArray();
+    assertEquals(2, column.size());
+
+    JsonArray firstCellElements = column.get(0).getAsJsonArray();
+    JsonArray secondCellElements = column.get(1).getAsJsonArray();
+
+    assertEquals(
+        "StartPoint", firstCellElements.get(0).getAsJsonObject().get("type").getAsString());
+    assertEquals("Pit", secondCellElements.get(0).getAsJsonObject().get("type").getAsString());
+  }
+
+  @Test
+  void rejectsNonPositiveBoardDimensions() {
+    BoardMapper mapper = new BoardMapper();
+    Board board = new Board();
+
+    assertThrows(IllegalArgumentException.class, () -> mapper.mapBoard(board, 0, 1));
+
+    assertThrows(IllegalArgumentException.class, () -> mapper.mapBoard(board, -1, 1));
+
+    assertThrows(IllegalArgumentException.class, () -> mapper.mapBoard(board, 1, 0));
+
+    assertThrows(IllegalArgumentException.class, () -> mapper.mapBoard(board, 1, -1));
   }
 }

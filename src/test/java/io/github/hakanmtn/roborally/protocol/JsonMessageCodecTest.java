@@ -6,6 +6,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import io.github.hakanmtn.roborally.model.Position;
+import io.github.hakanmtn.roborally.model.board.Board;
+import io.github.hakanmtn.roborally.model.board.Cell;
+import io.github.hakanmtn.roborally.model.board.element.StartPoint;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -841,16 +845,81 @@ class JsonMessageCodecTest {
   void decodingHelloServerWithNumericGroupThrowsException() {
     JsonMessageCodec codec = new JsonMessageCodec();
 
-    JsonObject body = JsonParser.parseString("""
+    JsonObject body =
+        JsonParser.parseString(
+                """
         {
           "group": 42,
           "isAI": false,
           "protocol": "Version 0.1"
         }
-        """).getAsJsonObject();
+        """)
+            .getAsJsonObject();
 
     assertThrows(
-            IllegalArgumentException.class,
-            () -> codec.decodeBody(body, HelloServerBody.class));
+        IllegalArgumentException.class, () -> codec.decodeBody(body, HelloServerBody.class));
+  }
+
+  @Test
+  void encodingGameStartedPreservesGameMap() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    Board board = new Board();
+    Cell cell = new Cell(new Position(0, 0), "4A");
+    cell.addElement(new StartPoint());
+    board.addCell(cell);
+
+    JsonArray gameMap = new BoardMapper().mapBoard(board, 1, 1);
+
+    GameStartedBody body = new GameStartedBody(gameMap);
+    ProtocolMessage<GameStartedBody> message = new ProtocolMessage<>("GameStarted", body);
+
+    String json = codec.encode(message);
+
+    JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+    JsonObject messageBody = root.getAsJsonObject("messageBody");
+
+    assertEquals("GameStarted", root.get("messageType").getAsString());
+    assertEquals(gameMap, messageBody.getAsJsonArray("gameMap"));
+  }
+
+  @Test
+  void decodingGameStartedPreservesNestedMapAndMissingCell() {
+    JsonMessageCodec codec = new JsonMessageCodec();
+
+    String json =
+        """
+        {
+          "messageType": "GameStarted",
+          "messageBody": {
+            "gameMap": [
+              [
+                [{"type": "StartPoint", "isOnBoard": "4A"}],
+                [null]
+              ]
+            ]
+          }
+        }
+        """;
+
+    ProtocolMessage<JsonObject> incoming = codec.decode(json);
+    GameStartedBody body = codec.decodeBody(incoming.messageBody(), GameStartedBody.class);
+
+    assertEquals("GameStarted", incoming.messageType());
+    assertEquals(1, body.gameMap().size());
+
+    JsonArray column = body.gameMap().get(0).getAsJsonArray();
+    assertEquals(2, column.size());
+
+    JsonObject startPoint = column.get(0).getAsJsonArray().get(0).getAsJsonObject();
+
+    assertEquals("StartPoint", startPoint.get("type").getAsString());
+    assertEquals("4A", startPoint.get("isOnBoard").getAsString());
+
+    JsonArray missingCell = column.get(1).getAsJsonArray();
+    assertEquals(1, missingCell.size());
+    assertTrue(missingCell.get(0).isJsonNull());
+
+
   }
 }
